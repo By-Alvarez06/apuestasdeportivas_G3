@@ -31,7 +31,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Ver `.specify/memory/constitution.md`. Marcar cada compuerta; I y II no admiten excepciones.
+
+- [ ] **I. Seguridad y antifraude**: vectores de fraude identificados y mitigados; RBAC por endpoint; auditoría de acciones sensibles; secretos solo en el backend.
+- [ ] **II. Integridad financiera**: movimientos de dinero solo vía ledger inmutable; transacción + bloqueo de fila; operaciones idempotentes; depósitos confirmados servidor a servidor.
+- [ ] **III. Servidor como autoridad**: ningún valor del cliente se acepta sin revalidar; cuota congelada al aceptar; reglas temporales con reloj del servidor.
+- [ ] **IV. Pruebas primero**: pruebas de concurrencia, idempotencia y abuso planificadas antes de implementar.
+- [ ] **V. Tiempo real**: objetivo ≤ 5 s; eventos por cola persistente; respeta la cuota de API-Football.
+- [ ] **VI. Simplicidad**: solo `apps/web`, `apps/api`, `apps/reports`; reportes en solo lectura; complejidad extra justificada abajo.
+- [ ] **VII. UX**: mobile-first desde 360 px, WCAG 2.1 AA, skill `frontend-design`.
 
 ## Project Structure
 

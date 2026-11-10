@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del proyecto
 
-Proyecto académico (UTPL) en fase inicial: todavía no hay código. La especificación completa está en `promtp.md` y es la fuente de verdad de requisitos; léela antes de implementar cualquier funcionalidad. El orden de construcción, las decisiones técnicas base y los criterios de cierre de cada fase están en `PLAN.md`. Cuando se creen los `package.json` / `pyproject.toml`, añade aquí los comandos reales de build, lint y tests (incluido cómo ejecutar un solo test).
+Proyecto académico (UTPL) en fase inicial: todavía no hay código. La especificación completa está en `promtp.md` y es la fuente de verdad de requisitos; léela antes de implementar cualquier funcionalidad. Los principios no negociables del proyecto están en `.specify/memory/constitution.md` (Spec Kit) y prevalecen sobre este archivo. El orden de construcción, las decisiones técnicas base y los criterios de cierre de cada fase están en `PLAN.md`. Cuando se creen los `package.json` / `pyproject.toml`, añade aquí los comandos reales de build, lint y tests (incluido cómo ejecutar un solo test).
 
 ## Arquitectura prevista
 
