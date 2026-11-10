@@ -39,3 +39,8 @@ La seguridad antifraude es el criterio prioritario del proyecto. Al tocar dinero
 - Grafana se usa para la trazabilidad del equipo de desarrollo (commits, PRs, despliegues, métricas DORA).
 - No usar Java ni Rust.
 - Para trabajo de UI, usar el skill `frontend-design` instalado en `.claude/skills/`.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
