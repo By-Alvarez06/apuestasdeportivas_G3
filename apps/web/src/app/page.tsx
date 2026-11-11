@@ -27,8 +27,14 @@ export default function HomePage() {
         }}
       >
         <StatusBadge label="Web" href="/" />
-        <StatusBadge label="API" href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/health`} />
-        <StatusBadge label="Reports" href={`${process.env.NEXT_PUBLIC_REPORTS_URL || 'http://localhost:8000'}/health`} />
+        <StatusBadge
+          label="API"
+          href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/health`}
+        />
+        <StatusBadge
+          label="Reports"
+          href={`${process.env.NEXT_PUBLIC_REPORTS_URL || 'http://localhost:8000'}/health`}
+        />
       </div>
       <p style={{ fontSize: '0.75rem', color: '#555' }}>v{APP_VERSION}</p>
     </main>
