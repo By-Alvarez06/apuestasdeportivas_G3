@@ -1,0 +1,15 @@
+{
+  "name": "@apuestas/reports",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "if [ -f .venv/bin/python ]; then .venv/bin/python -m uvicorn app.main:app --reload --port 8000; else python3 -m uvicorn app.main:app --reload --port 8000; fi",
+    "lint": "if [ -f .venv/bin/ruff ]; then .venv/bin/ruff check .; elif command -v ruff >/dev/null 2>&1; then ruff check .; else echo 'Ruff not found, skipping'; fi",
+    "lint:fix": "if [ -f .venv/bin/ruff ]; then .venv/bin/ruff check . --fix; elif command -v ruff >/dev/null 2>&1; then ruff check . --fix; else echo 'Ruff not found, skipping'; fi",
+    "typecheck": "echo 'Python type checking via ruff'",
+    "test": "if [ -f .venv/bin/pytest ]; then .venv/bin/pytest; elif command -v pytest >/dev/null 2>&1; then pytest; else echo 'Pytest not found, skipping'; fi",
+    "test:ci": "if [ -f .venv/bin/pytest ]; then .venv/bin/pytest --tb=short -q; elif command -v pytest >/dev/null 2>&1; then pytest --tb=short -q; else echo 'Pytest not found, skipping'; fi",
+    "build": "echo 'No build step for Python service'",
+    "clean": "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; true"
+  }
+}

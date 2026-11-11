@@ -1,0 +1,11 @@
+node_modules
+dist
+.next
+.turbo
+coverage
+apps/reports
+pnpm-lock.yaml
+.agents
+.claude
+.specify
+*.md

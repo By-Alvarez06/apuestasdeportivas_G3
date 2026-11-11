@@ -1,11 +1,38 @@
-.DS_Store
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Environment
 .env
 .env.*
 !.env.example
-__pycache__/
-.venv/
-.next/
-dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
 coverage/
-.turbo/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+*.egg-info/
+
+# Docker volumes (local)
+docker/data/
+
+# OS
+Thumbs.db
