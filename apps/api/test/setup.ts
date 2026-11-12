@@ -1,6 +1,8 @@
-import type { INestApplication } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { AppModule } from '../src/app.module';
+import { configureApp } from '../src/app.setup';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { createPrismaClient } from '../src/prisma/prisma.service';
 import { ensureSystemAccounts } from '../src/wallet/system-accounts';
@@ -24,10 +26,22 @@ export async function resetDatabase(prisma: PrismaClient): Promise<void> {
   await ensureSystemAccounts(prisma);
 }
 
-/** Levanta la app de Nest completa contra apuestas_test, con la misma configuración que main.ts. */
-export async function createTestApp(): Promise<INestApplication> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-  const app = moduleRef.createNestApplication();
+/**
+ * Levanta la app de Nest completa contra apuestas_test, con la misma configuración que main.ts.
+ * `controllers` permite montar controladores de prueba detrás de los guards globales.
+ */
+export async function createTestApp(
+  options: { controllers?: Type[] } = {},
+): Promise<NestExpressApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule],
+    controllers: options.controllers ?? [],
+  }).compile();
+  const app = moduleRef.createNestApplication<NestExpressApplication>();
+  configureApp(app);
   await app.init();
   return app;
 }
+
+/** Origen que acepta el chequeo CSRF; las pruebas lo envían como haría el navegador. */
+export const WEB_ORIGIN = process.env.WEB_URL ?? 'http://localhost:3000';

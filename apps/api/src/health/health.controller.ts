@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { APP_VERSION } from '@apuestas/shared';
 import type { HealthCheckResponse } from '@apuestas/shared';
+import { Public } from '../common/auth/decorators';
 
+@Public()
 @Controller('health')
 export class HealthController {
   private readonly startTime = Date.now();

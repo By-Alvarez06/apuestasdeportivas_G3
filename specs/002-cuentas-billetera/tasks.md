@@ -59,13 +59,13 @@ billetera, pagos y retiros, y verlas fallar antes de implementar.
 
 🔖 Commit: `feat(api): esquema de datos con libro contable y auditoría inmutables`
 
-- [ ] T012 [P] Añadir enums y DTOs compartidos (`UserStatus`, `DepositStatus`, `WithdrawalStatus`, `ErrorCode`, `Money` como string `"0.00"`) en `packages/shared/src/types.ts`, y helpers `toCents`/`fromCents` con pruebas en `packages/shared/src/money.ts`
-- [ ] T013 [P] Crear `AuditService.record({ actorId, action, target, metadata, ip, userAgent })` y `AuditModule` en `apps/api/src/audit/`
-- [ ] T014 [P] Crear filtro global de errores con formato `{ error: { code, message } }` y excepciones de dominio en `apps/api/src/common/errors/`
-- [ ] T015 Crear `AuthGuard` global (JWT en cookie `access_token`, denegado por defecto), decorador `@Public()`, `RolesGuard` con `@Roles(...)` y decorador `@CurrentUser()` en `apps/api/src/common/auth/`
-- [ ] T016 [P] Crear verificación de `Origin` contra `WEB_URL` en peticiones que cambian estado, en `apps/api/src/common/csrf.middleware.ts`
-- [ ] T017 [P] Crear interceptor que exige el header `Idempotency-Key` en rutas marcadas con `@Idempotent()`, en `apps/api/src/common/idempotency/`
-- [ ] T018 Pruebas de los guards: sin sesión → 401, rol incorrecto → 403, ruta sin `@Roles` → 403, en `apps/api/src/common/auth/roles.guard.spec.ts`
+- [X] T012 [P] Añadir enums y DTOs compartidos (`UserStatus`, `DepositStatus`, `WithdrawalStatus`, `ErrorCode`, `Money` como string `"0.00"`) en `packages/shared/src/types.ts`, y helpers `toCents`/`fromCents` en `packages/shared/src/money.ts` (pruebas en `apps/api/src/common/money.spec.ts`)
+- [X] T013 [P] Crear `AuditService.record({ actorId, action, target, metadata, ip, userAgent })` y `AuditModule` en `apps/api/src/audit/`
+- [X] T014 [P] Crear filtro global de errores con formato `{ error: { code, message } }` y excepciones de dominio en `apps/api/src/common/errors/`
+- [X] T015 Crear `AuthGuard` global (JWT en cookie `access_token`, denegado por defecto), decorador `@Public()`, `RolesGuard` con `@Roles(...)` y decorador `@CurrentUser()` en `apps/api/src/common/auth/`
+- [X] T016 [P] Crear verificación de `Origin` contra `WEB_URL` en peticiones que cambian estado, en `apps/api/src/common/csrf.middleware.ts`
+- [X] T017 [P] Crear decorador de parámetro `@IdempotencyKey()` que exige y valida el header `Idempotency-Key` en las rutas que mueven dinero, en `apps/api/src/common/idempotency-key.decorator.ts`
+- [X] T018 Pruebas de integración de guards y protecciones: sin sesión → 401, token falso → 401, suspendido → 401, ruta sin `@Roles` → 403, rol incorrecto → 403 auditado, origen ajeno → 403, `Idempotency-Key` inválido → 400, en `apps/api/test/access.e2e-spec.ts`
 
 🔖 Commit: `feat(api): guards de autenticación y roles, auditoría y errores comunes`
 
