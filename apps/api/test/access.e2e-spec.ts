@@ -7,7 +7,7 @@ import { Public, Roles } from '../src/common/auth/decorators';
 import { IdempotencyKey } from '../src/common/idempotency-key.decorator';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { Role, UserStatus } from '../src/generated/prisma/enums';
-import { createTestApp, createTestPrisma, resetDatabase, WEB_ORIGIN } from './setup';
+import { createTestApp, createTestPrisma, resetDatabase, signedInUser, WEB_ORIGIN } from './setup';
 
 // Rutas de prueba montadas detrás de los guards globales reales.
 @Controller('probe')
@@ -61,16 +61,7 @@ describe('Acceso, errores y protecciones comunes (T015–T018)', () => {
   beforeEach(() => resetDatabase(prisma));
 
   async function cookieFor(role: Role, status: UserStatus = UserStatus.ACTIVE): Promise<string> {
-    const user = await prisma.user.create({
-      data: {
-        email: `${role.toLowerCase()}-${Date.now()}@test.local`,
-        passwordHash: 'x',
-        birthDate: new Date('1990-01-01'),
-        role,
-        status,
-      },
-    });
-    return `access_token=${await jwt.signAsync({ sub: user.id })}`;
+    return (await signedInUser(app, prisma, { role, status })).cookie;
   }
 
   const get = (path: string, cookie?: string) => {
@@ -97,6 +88,13 @@ describe('Acceso, errores y protecciones comunes (T015–T018)', () => {
     const forged = new JwtService({ secret: 'otra-clave' }).sign({ sub: 'x' });
     await get('/probe/admin', `access_token=${forged}`).expect(401);
     await get('/probe/admin', 'access_token=basura').expect(401);
+  });
+
+  it('un token bien firmado pero sin sesión activa responde 401', async () => {
+    const { id } = await signedInUser(app, prisma, { role: Role.ADMIN });
+    await get('/probe/admin', `access_token=${await jwt.signAsync({ sub: id })}`).expect(401);
+    const sid = crypto.randomUUID();
+    await get('/probe/admin', `access_token=${await jwt.signAsync({ sub: id, sid })}`).expect(401);
   });
 
   it('un usuario suspendido no pasa aunque su token sea válido', async () => {

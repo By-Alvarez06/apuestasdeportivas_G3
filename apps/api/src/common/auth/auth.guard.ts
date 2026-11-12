@@ -25,20 +25,29 @@ export class AuthGuard implements CanActivate {
     const token: unknown = req.cookies?.[ACCESS_COOKIE];
     if (typeof token !== 'string' || !token) throw unauthenticated();
 
-    let sub: string;
+    let claims: { sub?: unknown; sid?: unknown };
     try {
-      ({ sub } = await this.jwt.verifyAsync<{ sub: string }>(token));
+      claims = await this.jwt.verifyAsync(token);
     } catch {
       throw unauthenticated('Tu sesión expiró. Inicia sesión de nuevo.');
     }
+    const { sub, sid } = claims;
+    if (typeof sub !== 'string' || typeof sid !== 'string') throw unauthenticated();
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: sub },
-      select: { id: true, role: true, status: true },
-    });
-    if (!user || user.status === UserStatus.SUSPENDED) throw unauthenticated();
+    const [user, session] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: sub },
+        select: { id: true, role: true, status: true },
+      }),
+      // La sesión sigue viva si su familia tiene algún refresh sin revocar ni vencer.
+      this.prisma.refreshToken.findFirst({
+        where: { userId: sub, familyId: sid, revokedAt: null, expiresAt: { gt: new Date() } },
+        select: { id: true },
+      }),
+    ]);
+    if (!user || !session || user.status === UserStatus.SUSPENDED) throw unauthenticated();
 
-    req.user = { id: user.id, role: user.role };
+    req.user = { id: user.id, role: user.role, sessionId: sid };
     return true;
   }
 }

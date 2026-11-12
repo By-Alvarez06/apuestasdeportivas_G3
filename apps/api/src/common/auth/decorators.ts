@@ -6,6 +6,8 @@ import type { Role } from '../../generated/prisma/enums';
 export interface AuthUser {
   id: string;
   role: Role;
+  /** Familia de la sesión (claim `sid`); revocarla cierra esta sesión al instante. */
+  sessionId: string;
 }
 
 export type AuthenticatedRequest = Request & { user?: AuthUser };

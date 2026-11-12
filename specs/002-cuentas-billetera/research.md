@@ -79,7 +79,7 @@ aquí se concretan y se resuelven los puntos abiertos.
 
 ## 9. Rate limiting y anti-bots
 
-- **Decision**: `@nestjs/throttler` con almacenamiento en Redis para límite por IP; bloqueo de
+- **Decision**: `@nestjs/throttler` en memoria para límite por IP (suficiente con una instancia en Render; pasar a Redis si se escala); bloqueo de
   cuenta (5 fallos / 15 min) calculado desde `LoginAttempt` en base de datos. CAPTCHA con Cloudflare
   Turnstile (gratis, con claves de prueba para desarrollo y CI), verificado en el servidor.
 - **Rationale**: Redis ya está en la infraestructura; Turnstile no exige resolver retos visuales,

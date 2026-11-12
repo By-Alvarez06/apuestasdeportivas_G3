@@ -82,19 +82,19 @@ billetera, pagos y retiros, y verlas fallar antes de implementar.
 
 ### Tests for User Story 1 ⚠️ (escribir primero, deben fallar)
 
-- [ ] T019 [P] [US1] Prueba de registro: mayor de edad crea cuenta `UNVERIFIED` con 3 cuentas `USER_*` y billetera; menor de edad rechazado; correo repetido responde 202 sin revelar; contraseña débil o filtrada rechazada, en `apps/api/test/auth-register.e2e-spec.ts`
-- [ ] T020 [P] [US1] Prueba de verificación y login: token válido activa, usado o caducado → 410; login correcto pone cookies; error genérico 401; 5 fallos en 15 min → 423 y auditoría, en `apps/api/test/auth-login.e2e-spec.ts`
-- [ ] T021 [P] [US1] Prueba de sesión: refresh rota el token; reusar un refresh revoca todas las sesiones; logout invalida; recuperación de contraseña cierra sesiones, en `apps/api/test/auth-session.e2e-spec.ts`
+- [X] T019 [P] [US1] Prueba de registro: mayor de edad crea cuenta `UNVERIFIED` con 3 cuentas `USER_*` y billetera; menor de edad rechazado; correo repetido responde 202 sin revelar; contraseña débil o filtrada rechazada, en `apps/api/test/auth-register.e2e-spec.ts`
+- [X] T020 [P] [US1] Prueba de verificación y login: token válido activa, usado o caducado → 410; login correcto pone cookies; error genérico 401; 5 fallos en 15 min → 423 y auditoría, en `apps/api/test/auth-login.e2e-spec.ts`
+- [X] T021 [P] [US1] Prueba de sesión: refresh rota el token; reusar un refresh revoca todas las sesiones; logout invalida; recuperación de contraseña cierra sesiones, en `apps/api/test/auth-session.e2e-spec.ts`
 
 ### Implementation for User Story 1
 
-- [ ] T022 [P] [US1] Crear `PasswordService` (Argon2id, política de 10 caracteres, consulta k-anonymity a HIBP con fallo abierto) en `apps/api/src/auth/password.service.ts`
-- [ ] T023 [P] [US1] Crear `CaptchaService` (Turnstile, verificación en servidor; claves de prueba en dev/CI) en `apps/api/src/auth/captcha.service.ts`
-- [ ] T024 [P] [US1] Crear `MailService` (nodemailer + plantillas de verificación, recuperación y aviso de registro duplicado) en `apps/api/src/auth/mail.service.ts`
-- [ ] T025 [US1] Crear `TokenService` (JWT de acceso 15 min, refresh opaco 7 días con hash SHA-256, rotación y detección de reuso) en `apps/api/src/auth/token.service.ts`
-- [ ] T026 [US1] Crear `AuthService` (registro que crea usuario, billetera y cuentas `USER_*` en una transacción; verificación; login con `LoginAttempt` y `lockedUntil`; recuperación) con auditoría en `apps/api/src/auth/auth.service.ts`
-- [ ] T027 [US1] Crear `AuthController` con las rutas de autenticación de [contracts/http-api.md](contracts/http-api.md) (sin 2FA), cookies `httpOnly`/`Secure`/`SameSite=Lax` y `ThrottlerGuard` por IP en `apps/api/src/auth/auth.controller.ts`
-- [ ] T028 [US1] Registrar `AuthModule` y `ThrottlerModule` en `apps/api/src/app.module.ts`
+- [X] T022 [P] [US1] Crear `PasswordService` (Argon2id, política de 10 caracteres, consulta k-anonymity a HIBP con fallo abierto) en `apps/api/src/auth/password.service.ts`
+- [X] T023 [P] [US1] Crear `CaptchaService` (Turnstile, verificación en servidor; claves de prueba en dev/CI) en `apps/api/src/auth/captcha.service.ts`
+- [X] T024 [P] [US1] Crear `MailService` (nodemailer + plantillas de verificación, recuperación y aviso de registro duplicado) en `apps/api/src/auth/mail.service.ts`
+- [X] T025 [US1] Crear `TokenService` (JWT de acceso 15 min, refresh opaco 7 días con hash SHA-256, rotación y detección de reuso) en `apps/api/src/auth/token.service.ts`
+- [X] T026 [US1] Crear `AuthService` (registro que crea usuario, billetera y cuentas `USER_*` en una transacción; verificación; login con `LoginAttempt` y `lockedUntil`; recuperación) con auditoría en `apps/api/src/auth/auth.service.ts`
+- [X] T027 [US1] Crear `AuthController` con las rutas de autenticación de [contracts/http-api.md](contracts/http-api.md) (sin 2FA), cookies `httpOnly`/`Secure`/`SameSite=Lax` y `ThrottlerGuard` por IP en `apps/api/src/auth/auth.controller.ts`
+- [X] T028 [US1] Registrar `AuthModule` y `ThrottlerModule` en `apps/api/src/app.module.ts`
 
 🔖 Commit: `feat(api): registro, verificación de correo, login y sesiones rotativas`
 
