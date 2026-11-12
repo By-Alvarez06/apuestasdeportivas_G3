@@ -228,7 +228,7 @@ administración.
 
 🔖 Commit: `feat(api): administración de usuarios, auditoría y correcciones contables`
 
-- [ ] T063 [US5] Crear páginas de administración de usuarios, retiros pendientes y auditoría en `apps/web/src/app/admin/`
+- [X] T063 [US5] Crear páginas de administración de usuarios, retiros pendientes y auditoría en `apps/web/src/app/admin/`
 
 🔖 Commit: `feat(web): panel de administración`
 
