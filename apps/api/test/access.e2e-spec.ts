@@ -73,6 +73,13 @@ describe('Acceso, errores y protecciones comunes (T015–T018)', () => {
     await get('/health').expect(200);
   });
 
+  it('responde con cabeceras de seguridad', async () => {
+    const res = await get('/health').expect(200);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['strict-transport-security']).toBeDefined();
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+
   it('una ruta pública no pide sesión', async () => {
     await get('/probe/open').expect(200);
   });
