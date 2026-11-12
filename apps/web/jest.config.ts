@@ -6,6 +6,7 @@ const config: Config = {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
   moduleNameMapper: {
+    '^@apuestas/shared$': '<rootDir>/../../packages/shared/src',
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss)$': '<rootDir>/src/__mocks__/styleMock.ts',
   },

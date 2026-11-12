@@ -10,6 +10,8 @@ const config: Config = {
   collectCoverageFrom: ['**/*.ts', '!main.ts', '!**/*.module.ts'],
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
+  // Pruebas usan las fuentes de shared: no hace falta compilarlo antes.
+  moduleNameMapper: { '^@apuestas/shared$': '<rootDir>/../../../packages/shared/src' },
 };
 
 export default config;

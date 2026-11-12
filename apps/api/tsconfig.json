@@ -9,7 +9,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "noEmit": false,
-    "incremental": true,
+    "incremental": false,
     "sourceMap": true,
     "baseUrl": "./"
   },
