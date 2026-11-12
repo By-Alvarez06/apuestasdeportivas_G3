@@ -181,12 +181,12 @@ umbral queda pendiente.
 
 ### Tests for User Story 4 ⚠️ (escribir primero, deben fallar)
 
-- [ ] T050 [P] [US4] Prueba de 2FA: setup devuelve QR; enable con código válido activa y entrega 10 códigos de recuperación; cada código de recuperación sirve una vez, en `apps/api/test/two-factor.e2e-spec.ts`
+- [X] T050 [P] [US4] Prueba de 2FA: setup devuelve QR; enable con código válido activa y entrega 10 códigos de recuperación; cada código de recuperación sirve una vez, en `apps/api/test/two-factor.e2e-spec.ts`
 
 ### Implementation for User Story 4 (2FA)
 
-- [ ] T051 [US4] Crear `TwoFactorService` (secreto TOTP cifrado AES-256-GCM con `TOTP_ENC_KEY`, verificación con `otplib`, códigos de recuperación con Argon2) y rutas `/auth/2fa/setup` y `/auth/2fa/enable` en `apps/api/src/auth/two-factor.service.ts`
-- [ ] T052 [US4] Crear página de seguridad de la cuenta con activación de 2FA en `apps/web/src/app/cuenta/seguridad/page.tsx`
+- [X] T051 [US4] Crear `TwoFactorService` (secreto TOTP cifrado AES-256-GCM con `TOTP_ENC_KEY`, verificación con `otplib`, códigos de recuperación con Argon2) y rutas `/auth/2fa/setup` y `/auth/2fa/enable` en `apps/api/src/auth/two-factor.service.ts`
+- [X] T052 [US4] Crear página de seguridad de la cuenta con activación de 2FA en `apps/web/src/app/cuenta/seguridad/page.tsx`
 
 🔖 Commit: `feat: verificación en dos pasos con TOTP`
 
