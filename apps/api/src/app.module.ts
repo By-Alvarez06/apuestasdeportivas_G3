@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [HealthModule],
+  imports: [
+    // El .env vive en la raíz del monorepo; las variables ya definidas en el entorno tienen prioridad.
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../../.env', '.env'] }),
+    HealthModule,
+  ],
 })
 export class AppModule {}

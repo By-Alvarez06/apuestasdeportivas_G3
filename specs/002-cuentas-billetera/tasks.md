@@ -34,11 +34,11 @@ billetera, pagos y retiros, y verlas fallar antes de implementar.
 
 **Purpose**: dependencias, entorno local y CI listos para escribir pruebas contra PostgreSQL.
 
-- [ ] T001 Añadir dependencias a `apps/api/package.json`: `prisma`, `@prisma/client`, `@nestjs/jwt`, `@nestjs/throttler`, `@nestjs/config`, `@nestjs/schedule`, `argon2`, `otplib`, `qrcode`, `nodemailer`, `cookie-parser`, `class-validator`, `class-transformer`, `supertest` (dev) y sus `@types`
-- [ ] T002 [P] Añadir Mailpit (SMTP 1025, web 8025) y la base `apuestas_test` (script de init) en `docker/docker-compose.yml`
-- [ ] T003 [P] Añadir `TOTP_ENC_KEY`, `SMTP_URL`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET`, `PAYPHONE_RESPONSE_URL`, `WITHDRAWAL_REVIEW_THRESHOLD_CENTS=20000`, `TEST_DATABASE_URL` en `.env.example`
-- [ ] T004 Configurar `apps/api/src/main.ts`: `ConfigModule` con `.env`, `cookie-parser`, `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`) y puerto desde `API_PORT`; quitar `--port` del script `dev` en `apps/api/package.json`
-- [ ] T005 Añadir servicio `postgres:16-alpine` y paso `pnpm --filter @apuestas/api test:e2e` al job `test-api` en `.github/workflows/ci.yml`
+- [X] T001 Añadir dependencias a `apps/api/package.json`: `prisma`, `@prisma/client`, `@nestjs/jwt`, `@nestjs/throttler`, `@nestjs/config`, `@nestjs/schedule`, `argon2`, `otplib`, `qrcode`, `nodemailer`, `cookie-parser`, `class-validator`, `class-transformer`, `supertest` (dev) y sus `@types`
+- [X] T002 [P] Añadir Mailpit (SMTP 1025, web 8025) y la base `apuestas_test` (script de init) en `docker/docker-compose.yml`
+- [X] T003 [P] Añadir `TOTP_ENC_KEY`, `SMTP_URL`, `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET`, `PAYPHONE_RESPONSE_URL`, `WITHDRAWAL_REVIEW_THRESHOLD_CENTS=20000`, `TEST_DATABASE_URL` en `.env.example`
+- [X] T004 Configurar `apps/api/src/main.ts`: `ConfigModule` con `.env`, `cookie-parser`, `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`) y puerto desde `API_PORT`; quitar `--port` del script `dev` en `apps/api/package.json`
+- [X] T005 Añadir servicio `postgres:16-alpine` y paso `pnpm --filter @apuestas/api test:e2e` al job `test-api` en `.github/workflows/ci.yml`
 
 🔖 Commit: `chore(api): preparar dependencias, entorno y CI para la spec 2`
 
