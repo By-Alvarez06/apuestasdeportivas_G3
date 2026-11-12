@@ -11,3 +11,5 @@ process.env.JWT_SECRET ??= 'secreto-solo-para-pruebas';
 process.env.TOTP_ENC_KEY ??= Buffer.alloc(32, 7).toString('base64');
 // Todas las peticiones de prueba salen de la misma IP; el límite por IP no debe interferir.
 process.env.THROTTLE_LIMIT = '10000';
+// Las pruebas llaman a la API directo, sin el proxy /api de la web.
+process.env.PUBLIC_API_PREFIX = '';

@@ -31,6 +31,8 @@ const ALL_ROLES = [Role.BETTOR, Role.OPERATOR, Role.ADMIN];
 @Controller('auth')
 export class AuthController {
   private readonly secure: boolean;
+  /** Ruta de la cookie de refresh tal como la ve el navegador (detrás del proxy /api de la web). */
+  private readonly refreshPath: string;
 
   constructor(
     private readonly auth: AuthService,
@@ -38,6 +40,7 @@ export class AuthController {
     config: ConfigService,
   ) {
     this.secure = config.get('NODE_ENV') === 'production';
+    this.refreshPath = `${config.get<string>('PUBLIC_API_PREFIX', '')}/auth`;
   }
 
   @Public()
@@ -131,12 +134,16 @@ export class AuthController {
 
   private setSessionCookies(res: Response, session: Session): void {
     res.cookie(ACCESS_COOKIE, session.accessToken, this.cookieOptions('/', ACCESS_TTL_MS));
-    // Solo viaja a /auth (refresh y logout), nunca al resto de la API.
-    res.cookie(REFRESH_COOKIE, session.refreshToken, this.cookieOptions('/auth', REFRESH_TTL_MS));
+    // Solo viaja a las rutas de /auth (refresh y logout), nunca al resto de la API.
+    res.cookie(
+      REFRESH_COOKIE,
+      session.refreshToken,
+      this.cookieOptions(this.refreshPath, REFRESH_TTL_MS),
+    );
   }
 
   private clearSessionCookies(res: Response): void {
     res.clearCookie(ACCESS_COOKIE, { path: '/' });
-    res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
+    res.clearCookie(REFRESH_COOKIE, { path: this.refreshPath });
   }
 }

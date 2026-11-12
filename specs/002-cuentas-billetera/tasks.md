@@ -98,9 +98,9 @@ billetera, pagos y retiros, y verlas fallar antes de implementar.
 
 🔖 Commit: `feat(api): registro, verificación de correo, login y sesiones rotativas`
 
-- [ ] T029 [P] [US1] Crear cliente HTTP con `credentials: 'include'` y renovación automática ante 401 en `apps/web/src/lib/api.ts`
-- [ ] T030 [P] [US1] Crear páginas de registro, ingreso, verificación de correo y recuperación (mobile-first, WCAG AA, Turnstile) en `apps/web/src/app/(auth)/`
-- [ ] T031 [US1] Prueba E2E de registro → verificación (Mailpit API) → login con Playwright en `apps/web/e2e/registro.spec.ts`
+- [X] T029 [P] [US1] Crear cliente HTTP por el proxy `/api` de Next.js (cookies de primer nivel) con renovación automática ante 401 en `apps/web/src/lib/api.ts`
+- [X] T030 [P] [US1] Crear páginas de registro, ingreso, verificación de correo y recuperación (mobile-first, WCAG AA, Turnstile) en `apps/web/src/app/(auth)/`
+- [X] T031 [US1] Prueba E2E de registro → verificación (Mailpit API) → login con Playwright en `apps/web/e2e/registro.spec.ts`
 
 🔖 Commit: `feat(web): pantallas de registro e inicio de sesión`
 
