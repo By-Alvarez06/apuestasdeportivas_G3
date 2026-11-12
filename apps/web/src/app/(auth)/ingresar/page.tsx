@@ -1,15 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { type FormEvent, useCallback, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type FormEvent, Suspense, useCallback, useState } from 'react';
+import { UserRole } from '@apuestas/shared';
 import { AuthShell } from '@/components/AuthShell';
 import { Notice } from '@/components/Notice';
 import { Turnstile } from '@/components/Turnstile';
 import { api, messageOf } from '@/lib/api';
 
-export default function LoginPage() {
+/** Solo rutas internas: un `volver` externo sería una redirección abierta. */
+function safeReturn(value: string | null): string | null {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : null;
+}
+
+function Login() {
   const router = useRouter();
+  const returnTo = safeReturn(useSearchParams().get('volver'));
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState('');
@@ -26,7 +33,8 @@ export default function LoginPage() {
         method: 'POST',
         body: { email: data.get('email'), password: data.get('password'), captchaToken },
       });
-      router.push('/billetera');
+      const me = await api<{ role: UserRole }>('/auth/me');
+      router.push(returnTo ?? (me.role === UserRole.ADMIN ? '/admin/usuarios' : '/billetera'));
     } catch (e) {
       setError(messageOf(e));
       setCaptchaReset((n) => n + 1);
@@ -66,5 +74,13 @@ export default function LoginPage() {
         </p>
       </div>
     </AuthShell>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <Login />
+    </Suspense>
   );
 }

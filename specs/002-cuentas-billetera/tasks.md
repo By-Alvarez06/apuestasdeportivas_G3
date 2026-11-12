@@ -131,7 +131,7 @@ dejan exactamente 0.00 USD.
 
 🔖 Commit: `feat(api): billetera sobre libro contable con bloqueo e idempotencia`
 
-- [ ] T039 [US2] Crear página de billetera con saldos e historial paginado en `apps/web/src/app/billetera/page.tsx`
+- [X] T039 [US2] Crear página de billetera con saldos e historial paginado en `apps/web/src/app/billetera/page.tsx`
 
 🔖 Commit: `feat(web): pantalla de billetera y movimientos`
 
