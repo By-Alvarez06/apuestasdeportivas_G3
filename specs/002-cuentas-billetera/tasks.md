@@ -192,14 +192,14 @@ umbral queda pendiente.
 
 ### Tests for User Story 4 (retiros) ⚠️
 
-- [ ] T053 [P] [US4] Prueba de abuso: sin 2FA → 403; código inválido → 403; otro titular → 403 y auditoría; saldo de bono no retirable; saldo insuficiente → 422 (SC-006), en `apps/api/test/withdrawals-abuse.e2e-spec.ts`
-- [ ] T054 [P] [US4] Prueba de flujo: bajo umbral retiene y paga con `SIM-`; sobre umbral o tras depósito sin apuestas queda `PENDING_APPROVAL`; rechazo libera la retención; dos retiros simultáneos que superan el saldo → solo uno, en `apps/api/test/withdrawals.e2e-spec.ts`
+- [X] T053 [P] [US4] Prueba de abuso: sin 2FA → 403; código inválido → 403; otro titular → 403 y auditoría; saldo de bono no retirable; saldo insuficiente → 422 (SC-006), en `apps/api/test/withdrawals-abuse.e2e-spec.ts`
+- [X] T054 [P] [US4] Prueba de flujo: bajo umbral retiene y paga con `SIM-`; sobre umbral o tras depósito sin apuestas queda `PENDING_APPROVAL`; rechazo libera la retención; dos retiros simultáneos que superan el saldo → solo uno, en `apps/api/test/withdrawals.e2e-spec.ts`
 
 ### Implementation for User Story 4 (retiros)
 
-- [ ] T055 [US4] Crear `WithdrawalsService` (validar 2FA y titular contra depósitos acreditados, `hold`, reglas de revisión, pago simulado `USER_HELD → PAYOUT`, rechazo con `release`) en `apps/api/src/withdrawals/withdrawals.service.ts`
-- [ ] T056 [US4] Crear `WithdrawalsController` (`POST /withdrawals`, `GET /withdrawals`) y rutas de administración `approve`/`reject` en `apps/api/src/withdrawals/`
-- [ ] T057 [US4] Crear página de retiro y listado de retiros propios en `apps/web/src/app/billetera/retirar/page.tsx`
+- [X] T055 [US4] Crear `WithdrawalsService` (validar 2FA y titular contra depósitos acreditados, `hold`, reglas de revisión, pago simulado `USER_HELD → PAYOUT`, rechazo con `release`) en `apps/api/src/withdrawals/withdrawals.service.ts`
+- [X] T056 [US4] Crear `WithdrawalsController` (`POST /withdrawals`, `GET /withdrawals`) y rutas de administración `approve`/`reject` en `apps/api/src/withdrawals/`
+- [X] T057 [US4] Crear página de retiro y listado de retiros propios en `apps/web/src/app/billetera/retirar/page.tsx`
 
 🔖 Commit: `feat: retiros con 2FA, mismo titular y revisión manual`
 

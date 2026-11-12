@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { WalletModule } from './wallet/wallet.module';
+import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WalletModule } from './wallet/wallet.module';
     AuthModule,
     WalletModule,
     DepositsModule,
+    WithdrawalsModule,
     HealthModule,
   ],
 })
