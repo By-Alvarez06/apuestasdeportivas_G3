@@ -1,12 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// E2E contra la pila completa local: API (3001), web y Mailpit (8025). Si ya están corriendo se reutilizan.
+// E2E contra la pila completa local: API (3001), web y Mailpit (8025). Si ya están corriendo se reutilizan;
+// la API que arranca Playwright apunta al Payphone simulado de e2e/payphone-mock.ts.
+const payphonePort = process.env.E2E_PAYPHONE_PORT ?? '8099';
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const webPort = new URL(baseURL).port || '3000';
 
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
+  // Un solo worker: el Payphone simulado ocupa un puerto fijo.
+  workers: 1,
   retries: 0,
   reporter: 'list',
   use: { baseURL, trace: 'retain-on-failure' },
@@ -18,6 +22,8 @@ export default defineConfig({
     {
       command: 'pnpm --filter @apuestas/api dev',
       url: 'http://localhost:3001/health',
+      // Todas las pruebas salen de la misma IP: el límite por IP no debe cortarlas.
+      env: { PAYPHONE_BASE_URL: `http://localhost:${payphonePort}`, THROTTLE_LIMIT: '1000' },
       reuseExistingServer: true,
       timeout: 120_000,
     },

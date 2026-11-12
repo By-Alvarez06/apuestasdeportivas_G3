@@ -1,0 +1,48 @@
+.page {
+  width: 100%;
+  max-width: 28rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.preset {
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-height: 2.75rem;
+  padding: 0.25rem 1rem;
+  color: var(--pitch);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.preset[aria-pressed='true'] {
+  color: var(--chalk);
+  background: var(--pitch);
+  border-color: var(--pitch);
+}
+
+.status {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.statusAmount {
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}

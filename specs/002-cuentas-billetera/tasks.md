@@ -163,8 +163,8 @@ saldo; datos que no coinciden dejan el depósito en revisión.
 
 🔖 Commit: `feat(api): depósitos con Payphone confirmados servidor a servidor`
 
-- [ ] T048 [US3] Crear páginas de depositar y estado del depósito (pendiente, acreditado, fallido) en `apps/web/src/app/billetera/depositar/` y `apps/web/src/app/billetera/depositos/[id]/`
-- [ ] T049 [US3] Prueba E2E de depósito con Payphone simulado en `apps/web/e2e/deposito.spec.ts`
+- [X] T048 [US3] Crear páginas de depositar y estado del depósito (pendiente, acreditado, fallido) en `apps/web/src/app/billetera/depositar/` y `apps/web/src/app/billetera/depositos/[id]/`
+- [X] T049 [US3] Prueba E2E de depósito con Payphone simulado en `apps/web/e2e/deposito.spec.ts`
 
 🔖 Commit: `feat(web): flujo de depósito`
 
