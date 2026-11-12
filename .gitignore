@@ -36,3 +36,6 @@ docker/data/
 
 # OS
 Thumbs.db
+
+# Prisma Client generado (se regenera en postinstall)
+apps/api/src/generated/

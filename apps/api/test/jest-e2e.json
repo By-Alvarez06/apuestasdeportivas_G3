@@ -8,5 +8,7 @@
   },
   "moduleNameMapper": {
     "^@apuestas/shared$": "<rootDir>/../../../packages/shared/src"
-  }
+  },
+  "setupFiles": ["<rootDir>/env.ts"],
+  "globalSetup": "<rootDir>/global-setup.ts"
 }

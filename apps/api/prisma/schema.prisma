@@ -1,0 +1,245 @@
+// Modelo de datos de la spec 2 — ver specs/002-cuentas-billetera/data-model.md
+// Montos en centavos (Int). AuditLog, LedgerTransaction y LedgerPosting son inmutables (triggers en
+// la migración inicial).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Identidad ────────────────────────────────────────────────────────────────
+
+enum Role {
+  BETTOR
+  OPERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  UNVERIFIED
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique
+  passwordHash  String
+  birthDate     DateTime   @db.Date
+  role          Role       @default(BETTOR)
+  status        UserStatus @default(UNVERIFIED)
+  lockedUntil   DateTime?
+  totpSecretEnc String?
+  totpEnabledAt DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  emailTokens   EmailToken[]
+  refreshTokens RefreshToken[]
+  recoveryCodes RecoveryCode[]
+  wallet        Wallet?
+  accounts      LedgerAccount[]
+  deposits      Deposit[]
+  withdrawals   Withdrawal[]   @relation("WithdrawalOwner")
+  reviewed      Withdrawal[]   @relation("WithdrawalReviewer")
+}
+
+enum EmailTokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model EmailToken {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @db.Uuid
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   EmailTokenPurpose
+  tokenHash String            @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId  String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  revokedAt DateTime?
+  ip        String
+  userAgent String
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model RecoveryCode {
+  id       String    @id @default(uuid()) @db.Uuid
+  userId   String    @db.Uuid
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash String
+  usedAt   DateTime?
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  userId    String?  @db.Uuid
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+/// Inmutable. Sin FK a User para que la auditoría sobreviva a cualquier cambio de usuarios.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json     @default("{}")
+  ip         String
+  userAgent  String
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
+
+// ── Libro contable ───────────────────────────────────────────────────────────
+
+enum LedgerAccountType {
+  USER_REAL
+  USER_BONUS
+  USER_HELD
+  HOUSE
+  GATEWAY
+  PAYOUT
+}
+
+/// Su saldo es SUM(LedgerPosting.amount); nunca se guarda.
+model LedgerAccount {
+  id       String            @id @default(uuid()) @db.Uuid
+  type     LedgerAccountType
+  userId   String?           @db.Uuid
+  user     User?             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  currency String            @default("USD")
+  postings LedgerPosting[]
+
+  // Las cuentas del sistema (userId null) son únicas por tipo: índice parcial en la migración.
+  @@unique([userId, type])
+}
+
+/// Fila que se bloquea con SELECT … FOR UPDATE en cada operación de dinero del usuario.
+model Wallet {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now())
+}
+
+enum LedgerTransactionType {
+  DEPOSIT
+  WITHDRAWAL_HOLD
+  WITHDRAWAL_RELEASE
+  WITHDRAWAL_PAYOUT
+  ADJUSTMENT
+  BET_DEBIT
+  BET_CREDIT
+  BONUS_CREDIT
+}
+
+/// Inmutable.
+model LedgerTransaction {
+  id             String                @id @default(uuid()) @db.Uuid
+  type           LedgerTransactionType
+  idempotencyKey String                @unique
+  referenceType  String
+  referenceId    String
+  reason         String?
+  createdById    String?               @db.Uuid
+  createdAt      DateTime              @default(now())
+  postings       LedgerPosting[]
+  deposit        Deposit?
+}
+
+/// Inmutable. Las líneas de una transacción suman 0 (trigger diferido en la migración).
+model LedgerPosting {
+  id            String            @id @default(uuid()) @db.Uuid
+  transactionId String            @db.Uuid
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  accountId     String            @db.Uuid
+  account       LedgerAccount     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  amount        Int
+
+  @@index([accountId])
+  @@index([transactionId])
+}
+
+// ── Pagos ────────────────────────────────────────────────────────────────────
+
+enum DepositStatus {
+  PENDING
+  CREDITED
+  FAILED
+  EXPIRED
+  IN_REVIEW
+}
+
+model Deposit {
+  id                  String             @id @default(uuid()) @db.Uuid
+  userId              String             @db.Uuid
+  user                User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  amount              Int
+  currency            String             @default("USD")
+  reference           String             @unique
+  providerTxId        String?            @unique
+  payerDocument       String?
+  payerPhone          String?
+  status              DepositStatus      @default(PENDING)
+  ledgerTransactionId String?            @unique @db.Uuid
+  ledgerTransaction   LedgerTransaction? @relation(fields: [ledgerTransactionId], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+enum WithdrawalStatus {
+  PROCESSING
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+  REJECTED
+}
+
+model Withdrawal {
+  id                  String           @id @default(uuid()) @db.Uuid
+  userId              String           @db.Uuid
+  user                User             @relation("WithdrawalOwner", fields: [userId], references: [id], onDelete: Restrict)
+  amount              Int
+  destinationDocument String
+  destinationPhone    String
+  status              WithdrawalStatus
+  reviewReason        String?
+  reviewedById        String?          @db.Uuid
+  reviewedBy          User?            @relation("WithdrawalReviewer", fields: [reviewedById], references: [id])
+  payoutReference     String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}

@@ -50,12 +50,12 @@ billetera, pagos y retiros, y verlas fallar antes de implementar.
 
 **⚠️ CRITICAL**: ninguna historia empieza hasta terminar esta fase.
 
-- [ ] T006 Crear `apps/api/prisma/schema.prisma` con todas las entidades de [data-model.md](data-model.md) (User, EmailToken, RefreshToken, RecoveryCode, LoginAttempt, AuditLog, LedgerAccount, Wallet, LedgerTransaction, LedgerPosting, Deposit, Withdrawal) y la migración inicial en `apps/api/prisma/migrations/`
-- [ ] T007 Escribir migración SQL con triggers que rechazan `UPDATE`/`DELETE` en `AuditLog`, `LedgerTransaction` y `LedgerPosting`, y trigger diferido que valida `SUM(amount) = 0` por transacción, en `apps/api/prisma/migrations/`
-- [ ] T008 [P] Prueba de integración que verifica que los triggers rechazan edición y borrado, y asientos descuadrados, en `apps/api/test/immutability.e2e-spec.ts`
-- [ ] T009 [P] Crear `PrismaService` y `PrismaModule` global en `apps/api/src/prisma/`
-- [ ] T010 [P] Crear helper de pruebas que limpia y migra `apuestas_test` y crea la app de Nest, en `apps/api/test/setup.ts`
-- [ ] T011 Crear seed con cuentas del sistema (`HOUSE`, `GATEWAY`, `PAYOUT`) y primer administrador desde `ADMIN_EMAIL`/`ADMIN_PASSWORD`, en `apps/api/prisma/seed.ts`
+- [X] T006 Crear `apps/api/prisma/schema.prisma` con todas las entidades de [data-model.md](data-model.md) (User, EmailToken, RefreshToken, RecoveryCode, LoginAttempt, AuditLog, LedgerAccount, Wallet, LedgerTransaction, LedgerPosting, Deposit, Withdrawal) y la migración inicial en `apps/api/prisma/migrations/`
+- [X] T007 Escribir migración SQL con triggers que rechazan `UPDATE`/`DELETE` en `AuditLog`, `LedgerTransaction` y `LedgerPosting`, y trigger diferido que valida `SUM(amount) = 0` por transacción, en `apps/api/prisma/migrations/`
+- [X] T008 [P] Prueba de integración que verifica que los triggers rechazan edición y borrado, y asientos descuadrados, en `apps/api/test/immutability.e2e-spec.ts`
+- [X] T009 [P] Crear `PrismaService` y `PrismaModule` global en `apps/api/src/prisma/`
+- [X] T010 [P] Crear helper de pruebas que limpia y migra `apuestas_test` y crea la app de Nest, en `apps/api/test/setup.ts`
+- [X] T011 Crear seed con cuentas del sistema (`HOUSE`, `GATEWAY`, `PAYOUT`) y primer administrador desde `ADMIN_EMAIL`/`ADMIN_PASSWORD`, en `apps/api/prisma/seed.ts`
 
 🔖 Commit: `feat(api): esquema de datos con libro contable y auditoría inmutables`
 
