@@ -96,19 +96,25 @@ aquí se concretan y se resuelven los puntos abiertos.
 
 ## 11. Payphone (sandbox)
 
-- **Decision**: flujo "Botón de pago" de Payphone:
-  1. `POST /api/button/Prepare` desde el backend con `amount` en centavos, `clientTransactionId` =
-     referencia de la intención, `responseUrl` y `cancellationUrl`. Devuelve la URL de pago.
+- **Decision**: flujo "Botón de pago por redirección" de Payphone (host `https://pay.payphonetodoesposible.com`,
+  verificado en docs.payphone.app el 2026-11-12):
+  1. `POST /api/button/Prepare` desde el backend con `Authorization: Bearer <token>`, `amount` y
+     `amountWithoutTax` en centavos (la suma de los componentes debe igualar `amount`), `currency`,
+     `clientTransactionId` = referencia de la intención, `storeId`, `reference`, `responseUrl` y
+     `cancellationUrl`. Devuelve `paymentId`, `payWithPayPhone` y `payWithCard` (los enlaces vencen a
+     los 10 minutos).
   2. Payphone redirige al `responseUrl` con `id` y `clientTransactionId`. Ese endpoint **no
-     acredita**: llama a `POST /api/button/V2/Confirm` servidor a servidor con el token del comercio.
-  3. Se acredita solo si `transactionStatus = Approved`, `amount`, `currency` y
-     `clientTransactionId` coinciden con la intención; si no, queda `IN_REVIEW`.
-  4. Un job cada 5 minutos reintenta la confirmación de intenciones `PENDING` y marca `EXPIRED` las de
-     más de 24 h.
+     acredita**: llama a `POST /api/button/V2/Confirm` con `{ id, clientTxId }`.
+  3. Se acredita solo si `statusCode = 3` / `transactionStatus = "Approved"` y `amount`, `currency` y
+     `clientTransactionId` coinciden con la intención; si no, `IN_REVIEW`. `statusCode = 2` es
+     cancelado → `FAILED`. El titular se toma de `document` y `phoneNumber`.
+  4. **Payphone revierte el cobro si no se confirma en 5 minutos.** Un job cada minuto reintenta las
+     confirmaciones `PENDING` que ya tienen `id` de Payphone y marca `EXPIRED` las de más de 24 h.
 - **Rationale**: el redirect solo dispara la confirmación; la verdad viene de la API de Payphone
-  (FR-023, FR-024). El job cubre usuarios que cierran el navegador antes de volver.
-- **Pendiente de verificar en el sandbox**: nombres exactos de campos y códigos de estado de la
-  respuesta de `Confirm`; se fijan en un test de contrato con una respuesta grabada.
+  (FR-023, FR-024).
+- **Verificación**: respuestas grabadas de la documentación oficial en
+  `apps/api/src/deposits/__fixtures__/`, usadas por `payphone.client.spec.ts`. Falta una prueba manual
+  con credenciales reales del sandbox (token y storeId del equipo).
 - **Alternatives considered**: depender de la notificación externa de Payphone (no está garantizada
   en sandbox; puede añadirse luego como disparador adicional de la misma confirmación).
 

@@ -149,17 +149,17 @@ saldo; datos que no coinciden dejan el depósito en revisión.
 
 ### Tests for User Story 3 ⚠️ (escribir primero, deben fallar)
 
-- [ ] T040 [P] [US3] Prueba de contrato de `PayphoneClient` con respuestas grabadas de `Prepare` y `V2/Confirm` (aprobado, cancelado, monto distinto) en `apps/api/src/deposits/payphone.client.spec.ts`
-- [ ] T041 [P] [US3] Prueba de depósitos con `PayphoneClient` falso: correo sin verificar → 403; fuera de límites → 400; confirmación aprobada acredita; 10 confirmaciones repetidas acreditan una vez (SC-003); monto o referencia distintos → `IN_REVIEW` y auditoría; el retorno sin confirmar no acredita, en `apps/api/test/deposits.e2e-spec.ts`
-- [ ] T042 [P] [US3] Prueba del job de reconciliación: confirma pendientes y expira los de más de 24 h, en `apps/api/test/deposits-reconcile.e2e-spec.ts`
+- [X] T040 [P] [US3] Prueba de contrato de `PayphoneClient` con respuestas grabadas de `Prepare` y `V2/Confirm` (aprobado, cancelado, monto distinto) en `apps/api/src/deposits/payphone.client.spec.ts`
+- [X] T041 [P] [US3] Prueba de depósitos con `PayphoneClient` falso: correo sin verificar → 403; fuera de límites → 400; confirmación aprobada acredita; 10 confirmaciones repetidas acreditan una vez (SC-003); monto o referencia distintos → `IN_REVIEW` y auditoría; el retorno sin confirmar no acredita, en `apps/api/test/deposits.e2e-spec.ts`
+- [X] T042 [P] [US3] Prueba del job de reconciliación: confirma pendientes y expira los de más de 24 h, en `apps/api/test/deposits-reconcile.e2e-spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T043 [US3] Verificar en el sandbox de Payphone los nombres de campos y estados de `Prepare` y `V2/Confirm`, grabar las respuestas en `apps/api/src/deposits/__fixtures__/` y anotar diferencias en [research.md](research.md) §11
-- [ ] T044 [US3] Crear `PayphoneClient` (interfaz + implementación HTTP con `PAYPHONE_TOKEN`) en `apps/api/src/deposits/payphone.client.ts`
-- [ ] T045 [US3] Crear `DepositsService` (crear intención, confirmar con validación de monto/moneda/referencia y crédito `GATEWAY → USER_REAL` con clave `deposit:<id>`, guardar titular del pagador) en `apps/api/src/deposits/deposits.service.ts`
-- [ ] T046 [US3] Crear `DepositsController` (`POST /deposits`, `GET /deposits/:id`, `GET /payments/payphone/return`) en `apps/api/src/deposits/deposits.controller.ts`
-- [ ] T047 [US3] Crear job cada 5 min de reconciliación y expiración con `@nestjs/schedule` en `apps/api/src/deposits/deposits.reconcile.ts`
+- [X] T043 [US3] Verificar en el sandbox de Payphone los nombres de campos y estados de `Prepare` y `V2/Confirm`, grabar las respuestas en `apps/api/src/deposits/__fixtures__/` y anotar diferencias en [research.md](research.md) §11
+- [X] T044 [US3] Crear `PayphoneClient` (interfaz + implementación HTTP con `PAYPHONE_TOKEN`) en `apps/api/src/deposits/payphone.client.ts`
+- [X] T045 [US3] Crear `DepositsService` (crear intención, confirmar con validación de monto/moneda/referencia y crédito `GATEWAY → USER_REAL` con clave `deposit:<id>`, guardar titular del pagador) en `apps/api/src/deposits/deposits.service.ts`
+- [X] T046 [US3] Crear `DepositsController` (`POST /deposits`, `GET /deposits/:id`, `GET /payments/payphone/return`) en `apps/api/src/deposits/deposits.controller.ts`
+- [X] T047 [US3] Crear job cada 5 min de reconciliación y expiración con `@nestjs/schedule` en `apps/api/src/deposits/deposits.reconcile.ts`
 
 🔖 Commit: `feat(api): depósitos con Payphone confirmados servidor a servidor`
 

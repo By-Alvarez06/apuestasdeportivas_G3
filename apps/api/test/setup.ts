@@ -6,6 +6,7 @@ import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
 import { BreachedPasswordChecker } from '../src/auth/breached-password.checker';
 import { CaptchaService } from '../src/auth/captcha.service';
+import { PayphoneClient } from '../src/deposits/payphone.client';
 import { TokenService } from '../src/auth/token.service';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { Role, UserStatus } from '../src/generated/prisma/enums';
@@ -13,7 +14,12 @@ import { MailService } from '../src/mail/mail.service';
 import { createPrismaClient } from '../src/prisma/prisma.service';
 import { ensureSystemAccounts } from '../src/wallet/system-accounts';
 import { newUserWallet } from '../src/wallet/user-wallet';
-import { FakeBreachedPasswordChecker, FakeCaptchaService, FakeMailService } from './fakes';
+import {
+  FakeBreachedPasswordChecker,
+  FakeCaptchaService,
+  FakeMailService,
+  FakePayphoneClient,
+} from './fakes';
 
 export function createTestPrisma(): PrismaClient {
   return createPrismaClient(process.env.DATABASE_URL as string);
@@ -52,11 +58,17 @@ export async function createTestApp(
     .useValue(new FakeCaptchaService())
     .overrideProvider(BreachedPasswordChecker)
     .useValue(new FakeBreachedPasswordChecker())
+    .overrideProvider(PayphoneClient)
+    .useValue(new FakePayphoneClient())
     .compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>();
   configureApp(app);
   await app.init();
   return app;
+}
+
+export function payphoneOf(app: NestExpressApplication): FakePayphoneClient {
+  return app.get(PayphoneClient) as unknown as FakePayphoneClient;
 }
 
 export function mailOf(app: NestExpressApplication): FakeMailService {

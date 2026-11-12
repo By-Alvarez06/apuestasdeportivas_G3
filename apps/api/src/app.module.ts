@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { AccessModule } from './common/auth/access.module';
+import { DepositsModule } from './deposits/deposits.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -20,12 +22,14 @@ import { WalletModule } from './wallet/wallet.module';
         { ttl: 60_000, limit: Number(config.get('THROTTLE_LIMIT', 20)) },
       ],
     }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuditModule,
     MailModule,
     AccessModule,
     AuthModule,
     WalletModule,
+    DepositsModule,
     HealthModule,
   ],
 })
