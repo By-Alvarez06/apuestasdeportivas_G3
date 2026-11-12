@@ -12,6 +12,7 @@ import { Role, UserStatus } from '../src/generated/prisma/enums';
 import { MailService } from '../src/mail/mail.service';
 import { createPrismaClient } from '../src/prisma/prisma.service';
 import { ensureSystemAccounts } from '../src/wallet/system-accounts';
+import { newUserWallet } from '../src/wallet/user-wallet';
 import { FakeBreachedPasswordChecker, FakeCaptchaService, FakeMailService } from './fakes';
 
 export function createTestPrisma(): PrismaClient {
@@ -78,6 +79,7 @@ export async function signedInUser(
       birthDate: new Date('1990-01-01'),
       role,
       status,
+      ...(role === Role.BETTOR ? newUserWallet() : {}),
     },
   });
   const session = await app

@@ -6,14 +6,10 @@ import { AuditService } from '../audit/audit.service';
 import { DomainError, validationError } from '../common/errors/domain-error';
 import type { RequestMeta } from '../common/request-meta';
 import { Prisma } from '../generated/prisma/client';
-import {
-  EmailTokenPurpose,
-  LedgerAccountType,
-  type Role,
-  UserStatus,
-} from '../generated/prisma/enums';
+import { EmailTokenPurpose, type Role, UserStatus } from '../generated/prisma/enums';
 import { type MailMessage, MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { newUserWallet } from '../wallet/user-wallet';
 import {
   accountLockedMail,
   duplicateRegistrationMail,
@@ -96,14 +92,7 @@ export class AuthService {
             email: dto.email,
             passwordHash,
             birthDate,
-            wallet: { create: {} },
-            accounts: {
-              create: [
-                { type: LedgerAccountType.USER_REAL },
-                { type: LedgerAccountType.USER_BONUS },
-                { type: LedgerAccountType.USER_HELD },
-              ],
-            },
+            ...newUserWallet(),
           },
         });
         await this.audit.record(

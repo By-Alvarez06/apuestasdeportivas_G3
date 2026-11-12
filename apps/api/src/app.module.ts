@@ -7,6 +7,7 @@ import { AccessModule } from './common/auth/access.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PrismaModule } from './prisma/prisma.module';
     MailModule,
     AccessModule,
     AuthModule,
+    WalletModule,
     HealthModule,
   ],
 })

@@ -118,16 +118,16 @@ dejan exactamente 0.00 USD.
 
 ### Tests for User Story 2 ⚠️ (escribir primero, deben fallar)
 
-- [ ] T032 [P] [US2] Suite de contrato de `WalletService` reutilizable (débito sin saldo falla, idempotencia, misma clave con otro monto → conflicto, hold/release) exportada en `apps/api/src/wallet/testing/wallet-contract.ts`
-- [ ] T033 [P] [US2] Prueba de concurrencia: 20 débitos de 10.00 simultáneos sobre 100.00 → 10 aceptados, saldo 0.00; 100 operaciones mixtas cuadran al centavo (SC-002), en `apps/api/test/wallet-concurrency.e2e-spec.ts`
-- [ ] T034 [P] [US2] Prueba de reconstrucción: el saldo es igual a la suma del historial (SC-005) y el endpoint de movimientos pagina y filtra, en `apps/api/test/wallet-movements.e2e-spec.ts`
+- [X] T032 [P] [US2] Suite de contrato de `WalletPort` reutilizable (débito sin saldo falla, idempotencia, misma clave con otro monto → conflicto, hold/release) exportada en `apps/api/src/wallet/testing/wallet-contract.ts`
+- [X] T033 [P] [US2] Prueba de concurrencia: 20 débitos de 10.00 simultáneos sobre 100.00 → 10 aceptados, saldo 0.00; 100 operaciones mixtas cuadran al centavo (SC-002), en `apps/api/test/wallet-concurrency.e2e-spec.ts`
+- [X] T034 [P] [US2] Prueba de reconstrucción: el saldo es igual a la suma del historial (SC-005) y el endpoint de movimientos pagina y filtra, en `apps/api/test/wallet-movements.e2e-spec.ts`
 
 ### Implementation for User Story 2
 
-- [ ] T035 [US2] Crear `LedgerService.post({ type, idempotencyKey, reference, postings }, tx)` que valida suma 0 y devuelve la transacción existente si la clave se repite, en `apps/api/src/wallet/ledger.service.ts`
-- [ ] T036 [US2] Crear `WalletService` (`getBalances`, `debit`, `credit`, `hold`, `release` con `SELECT … FOR UPDATE` sobre `Wallet` y `tx` opcional) según [contracts/wallet-service.md](contracts/wallet-service.md) en `apps/api/src/wallet/wallet.service.ts`
-- [ ] T037 [US2] Crear `WalletController` (`GET /wallet`, `GET /wallet/movements`, rol apostador) y `WalletModule` que exporta `WalletService`, en `apps/api/src/wallet/`
-- [ ] T038 [US2] Crear doble en memoria de `WalletService` que pasa la misma suite de contrato, para la spec 4, en `apps/api/src/wallet/testing/in-memory-wallet.service.ts`
+- [X] T035 [US2] Crear `LedgerService.post({ type, idempotencyKey, reference, postings }, tx)` que valida suma 0 y devuelve la transacción existente si la clave se repite, en `apps/api/src/wallet/ledger.service.ts`
+- [X] T036 [US2] Crear `WalletService` (`getBalances`, `debit`, `credit`, `hold`, `release` con `SELECT … FOR UPDATE` sobre `Wallet` y `tx` opcional) según [contracts/wallet-service.md](contracts/wallet-service.md) en `apps/api/src/wallet/wallet.service.ts`
+- [X] T037 [US2] Crear `WalletController` (`GET /wallet`, `GET /wallet/movements`, rol apostador) y `WalletModule` que exporta `WalletService`, en `apps/api/src/wallet/`
+- [X] T038 [US2] Crear doble en memoria de `WalletService` que pasa la misma suite de contrato, para la spec 4, en `apps/api/src/wallet/testing/in-memory-wallet.service.ts`
 
 🔖 Commit: `feat(api): billetera sobre libro contable con bloqueo e idempotencia`
 
