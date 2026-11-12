@@ -4,7 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Estado del proyecto
 
-Proyecto académico (UTPL) en fase inicial: todavía no hay código. La especificación completa está en `promtp.md` y es la fuente de verdad de requisitos; léela antes de implementar cualquier funcionalidad. Los principios no negociables del proyecto están en `.specify/memory/constitution.md` (Spec Kit) y prevalecen sobre este archivo. El orden de construcción, las decisiones técnicas base y los criterios de cierre de cada fase están en `PLAN.md`. Cuando se creen los `package.json` / `pyproject.toml`, añade aquí los comandos reales de build, lint y tests (incluido cómo ejecutar un solo test).
+Proyecto académico (UTPL). La especificación completa está en `promtp.md` y es la fuente de verdad de requisitos; léela antes de implementar cualquier funcionalidad. Los principios no negociables del proyecto están en `.specify/memory/constitution.md` (Spec Kit) y prevalecen sobre este archivo. El orden de construcción, las decisiones técnicas base y los criterios de cierre de cada fase están en `PLAN.md`. Las specs y su reparto están en `specs/README.md`; cada spec vive en `specs/00N-nombre/`.
+
+## Comandos
+
+Requisitos: Node 22 (Prisma no soporta Node 26), pnpm, Docker. El `.env` vive en la raíz (copia `.env.example`).
+
+```bash
+pnpm install                                   # también genera el cliente de Prisma (postinstall)
+pnpm db:up                                     # PostgreSQL, Redis y Mailpit; si el 5432 está ocupado: POSTGRES_PORT=5434 pnpm db:up
+pnpm --filter @apuestas/api db:migrate         # migraciones en la base de desarrollo
+pnpm --filter @apuestas/api db:seed            # cuentas del sistema y primer administrador (ADMIN_EMAIL/ADMIN_PASSWORD)
+pnpm dev                                       # api :3001, web :3000 (la web llega a la API por el proxy /api)
+
+pnpm lint && pnpm typecheck && pnpm format:check
+pnpm --filter @apuestas/api test               # unitarias (src/**/*.spec.ts)
+pnpm --filter @apuestas/api test:e2e           # integración contra apuestas_test (TEST_DATABASE_URL)
+pnpm --filter @apuestas/api test:e2e -- wallet # un solo archivo: patrón del nombre
+pnpm --filter @apuestas/api test:e2e -- -t "texto del it"   # una sola prueba
+pnpm --filter @apuestas/web test:e2e           # Playwright contra la pila local (E2E_BASE_URL si la web no está en :3000)
+```
+
+Notas que no se deducen del código:
+
+- Las pruebas de integración usan dobles sin red para correo, Turnstile, HIBP y Payphone (`apps/api/test/fakes.ts`); la E2E de depósito levanta un Payphone simulado (`apps/web/e2e/payphone-mock.ts`).
+- `@nestjs/config`, `@nestjs/jwt`, `@nestjs/schedule` y `otplib` están fijados en versiones CommonJS: las siguientes son solo ESM y Jest no las carga.
+- Todo movimiento de dinero pasa por `WalletService` (`apps/api/src/wallet`, contrato en `specs/002-cuentas-billetera/contracts/wallet-service.md`); ningún otro módulo escribe en las tablas del libro contable.
 
 ## Arquitectura prevista
 
