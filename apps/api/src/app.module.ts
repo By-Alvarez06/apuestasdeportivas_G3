@@ -9,6 +9,7 @@ import { DepositsModule } from './deposits/deposits.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 
@@ -32,6 +33,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     WalletModule,
     DepositsModule,
     WithdrawalsModule,
+    UsersModule,
     HealthModule,
   ],
 })

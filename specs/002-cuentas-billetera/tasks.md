@@ -217,14 +217,14 @@ administración.
 
 ### Tests for User Story 5 ⚠️ (escribir primero, deben fallar)
 
-- [ ] T058 [P] [US5] Prueba de autorización: cada ruta `/admin/*` responde 403 a apostador y operador (SC-007); el único administrador no puede quitarse el rol; suspensión impide login, en `apps/api/test/admin.e2e-spec.ts`
-- [ ] T059 [P] [US5] Prueba de auditoría: toda acción de FR-011 queda con quién, qué, cuándo, IP y dispositivo (SC-009); corrección contable exige motivo, en `apps/api/test/audit.e2e-spec.ts`
+- [X] T058 [P] [US5] Prueba de autorización: cada ruta `/admin/*` responde 403 a apostador y operador (SC-007); el único administrador no puede quitarse el rol; suspensión impide login, en `apps/api/test/admin.e2e-spec.ts`
+- [X] T059 [P] [US5] Prueba de auditoría: toda acción de FR-011 queda con quién, qué, cuándo, IP y dispositivo (SC-009); corrección contable exige motivo, en `apps/api/test/audit.e2e-spec.ts`
 
 ### Implementation for User Story 5
 
-- [ ] T060 [US5] Crear `UsersAdminController` y servicio (listar, cambiar rol, suspender/activar) en `apps/api/src/users/`
-- [ ] T061 [US5] Crear `GET /admin/audit` con filtros y paginación en `apps/api/src/audit/audit.controller.ts`
-- [ ] T062 [US5] Crear `POST /admin/ledger/adjustments` (asiento compensatorio contra `HOUSE`, motivo obligatorio, `Idempotency-Key`) en `apps/api/src/wallet/adjustments.controller.ts`
+- [X] T060 [US5] Crear `UsersAdminController` y servicio (listar, cambiar rol, suspender/activar) en `apps/api/src/users/`
+- [X] T061 [US5] Crear `GET /admin/audit` con filtros y paginación en `apps/api/src/audit/audit.controller.ts`
+- [X] T062 [US5] Crear `POST /admin/ledger/adjustments` (asiento compensatorio contra `HOUSE`, motivo obligatorio, `Idempotency-Key`) en `apps/api/src/wallet/adjustments.controller.ts`
 
 🔖 Commit: `feat(api): administración de usuarios, auditoría y correcciones contables`
 
