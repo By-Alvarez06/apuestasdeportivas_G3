@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { type AuthUser, CurrentUser, Roles } from '../common/auth/decorators';
 import { IdempotencyKey } from '../common/idempotency-key.decorator';
@@ -40,6 +50,8 @@ export class RejectDto {
 export class WithdrawalsController {
   constructor(private readonly withdrawals: WithdrawalsService) {}
 
+  // Límite por IP además del límite de fallos de 2FA por usuario del servicio.
+  @UseGuards(ThrottlerGuard)
   @Roles(Role.BETTOR)
   @Post('withdrawals')
   create(

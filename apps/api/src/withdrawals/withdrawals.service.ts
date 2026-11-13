@@ -20,6 +20,8 @@ import type { Tx } from '../wallet/ledger.service';
 import { WalletService } from '../wallet/wallet.service';
 
 const RECENT_DEPOSIT_MS = 24 * 60 * 60 * 1000;
+const TWO_FACTOR_WINDOW_MS = 15 * 60 * 1000;
+const MAX_TWO_FACTOR_FAILURES = 5;
 const DEFAULT_REVIEW_THRESHOLD_CENTS = 20_000;
 
 export interface WithdrawalRequest {
@@ -100,8 +102,24 @@ export class WithdrawalsService {
     if (user.status !== UserStatus.ACTIVE) throw forbidden('Confirma tu correo para retirar.');
     if (!user.totpEnabledAt)
       throw twoFactorRequired('Activa la verificación en dos pasos para poder retirar.');
-    if (!(await this.twoFactor.verify(userId, req.totpCode)))
+    // FR-005 aplicado al 2FA: 5 códigos incorrectos en 15 minutos bloquean los retiros del usuario.
+    const recentFailures = await this.prisma.auditLog.count({
+      where: {
+        actorId: userId,
+        action: 'withdrawal.2fa.failed',
+        createdAt: { gte: new Date(Date.now() - TWO_FACTOR_WINDOW_MS) },
+      },
+    });
+    if (recentFailures >= MAX_TWO_FACTOR_FAILURES)
+      throw new DomainError(
+        ErrorCode.ACCOUNT_LOCKED,
+        'Demasiados códigos incorrectos. Podrás retirar de nuevo en 15 minutos.',
+        HttpStatus.LOCKED,
+      );
+    if (!(await this.twoFactor.verify(userId, req.totpCode))) {
+      await this.audit.record({ actorId: userId, action: 'withdrawal.2fa.failed', ...meta });
       throw twoFactorRequired('El código de verificación no es correcto.');
+    }
 
     // FR-027: el destino debe ser el titular que Payphone informó en un depósito acreditado.
     const holderDeposit = await this.prisma.deposit.findFirst({

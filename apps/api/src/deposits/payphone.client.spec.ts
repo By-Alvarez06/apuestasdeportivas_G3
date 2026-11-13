@@ -83,7 +83,9 @@ describe('HttpPayphoneClient', () => {
   it('si Payphone no responde, lo distingue de un rechazo', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
     await expect(client.confirm(1, 'DEP-x')).rejects.toBeInstanceOf(PayphoneUnavailableError);
-    reply(500, { message: 'error' });
-    await expect(client.confirm(1, 'DEP-x')).rejects.toBeInstanceOf(PayphoneUnavailableError);
+    for (const status of [500, 401, 403, 408, 429]) {
+      reply(status, { message: 'error' });
+      await expect(client.confirm(1, 'DEP-x')).rejects.toBeInstanceOf(PayphoneUnavailableError);
+    }
   });
 });

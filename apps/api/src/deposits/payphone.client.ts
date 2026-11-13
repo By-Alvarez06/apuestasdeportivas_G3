@@ -36,6 +36,7 @@ export abstract class PayphoneClient {
 
 const DEFAULT_BASE_URL = 'https://pay.payphonetodoesposible.com';
 const APPROVED = 3;
+const RETRYABLE_STATUS = new Set([401, 403, 408, 429]);
 
 /** Botón de pago por redirección (docs.payphone.app/boton-de-pago-por-redireccion), modo sandbox. */
 @Injectable()
@@ -68,8 +69,10 @@ export class HttpPayphoneClient extends PayphoneClient {
 
   async confirm(id: number, clientTxId: string): Promise<PayphoneConfirmation> {
     const { status, body } = await this.post('/api/button/V2/Confirm', { id, clientTxId });
-    // Un 4xx es una respuesta válida de Payphone (p. ej. transacción inexistente): no está aprobada.
-    if (status >= 500) throw new PayphoneUnavailableError(`Confirm respondió ${status}`);
+    // Solo una respuesta de Payphone sobre el pago (200, o 400 "transacción inexistente") decide si está
+    // aprobado. 5xx, credenciales (401/403), tiempo agotado (408) o límite (429) no dicen nada del pago.
+    if (status >= 500 || RETRYABLE_STATUS.has(status))
+      throw new PayphoneUnavailableError(`Confirm respondió ${status}`);
     const r = body as Record<string, unknown>;
     return {
       approved: status === 200 && r.statusCode === APPROVED && r.transactionStatus === 'Approved',

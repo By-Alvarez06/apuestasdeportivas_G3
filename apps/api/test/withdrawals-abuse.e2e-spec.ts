@@ -66,6 +66,13 @@ describe('US4 · Retiros: abuso (T053, SC-006)', () => {
     expect(await realBalance()).toBe(5000);
   });
 
+  it('5 códigos 2FA incorrectos en 15 minutos bloquean los retiros, aunque luego el código sea bueno', async () => {
+    for (let i = 0; i < 5; i++) await withdraw({ totpCode: '000000' }).expect(403);
+    const res = await withdraw({}).expect(423);
+    expect(res.body.error.code).toBe(ErrorCode.ACCOUNT_LOCKED);
+    expect(await prisma.withdrawal.count()).toBe(0);
+  });
+
   it.each([
     ['otro documento', { destinationDocument: '0999999999' }],
     ['otro teléfono', { destinationPhone: '593900000000' }],
