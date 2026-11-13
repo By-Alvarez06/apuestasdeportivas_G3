@@ -241,7 +241,7 @@ administración.
 - [X] T064 [P] Añadir comandos reales (dev, test, test:e2e, un solo test, migraciones, seed) en la sección "Estado del proyecto" de `CLAUDE.md`
 - [X] T065 [P] Revisión de cabeceras de seguridad (`helmet`) y que ningún log incluya contraseñas, tokens ni secretos TOTP, en `apps/api/src/main.ts`
 - [X] T066 Recorrer [quickstart.md](quickstart.md) completo y corregir lo que no coincida
-- [ ] T067 Actualizar la fila de la spec 2 a "Terminada" en `specs/README.md` (pendiente: depende de que se integre el PR #2 con el catálogo de 4 specs)
+- [X] T067 Actualizar la fila de la spec 2 a "Terminada" en `specs/README.md`
 
 🔖 Commit: `docs(spec-2): comandos, quickstart y cierre`
 
