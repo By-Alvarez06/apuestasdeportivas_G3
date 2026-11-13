@@ -6,6 +6,7 @@ import type { RequestMeta } from '../common/request-meta';
 import { LedgerAccountType, Role, UserStatus } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Tx } from '../wallet/ledger.service';
+import { lockUserSessions, revokeAll } from '../auth/token.service';
 
 export interface UserFilters {
   email?: string;
@@ -88,11 +89,10 @@ export class UsersAdminService {
         await this.assertAnotherAdmin(userId, tx);
       await tx.user.update({ where: { id: userId }, data: { status } });
       // Suspender cierra todas sus sesiones al instante (AuthGuard comprueba la sesión en cada petición).
-      if (status === UserStatus.SUSPENDED)
-        await tx.refreshToken.updateMany({
-          where: { userId, revokedAt: null },
-          data: { revokedAt: new Date() },
-        });
+      if (status === UserStatus.SUSPENDED) {
+        await lockUserSessions(tx, userId);
+        await revokeAll(tx, userId);
+      }
       await this.audit.record(
         {
           actorId: adminId,
@@ -109,6 +109,9 @@ export class UsersAdminService {
   }
 
   private async lockUser(userId: string, tx: Tx) {
+    // Primero todos los administradores, en orden fijo: dos cambios simultáneos sobre administradores
+    // distintos se esperan y el segundo ya cuenta con el resultado del primero.
+    await tx.$queryRaw`SELECT id FROM "User" WHERE role = 'ADMIN' ORDER BY id FOR UPDATE`;
     const [row] = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM "User" WHERE id = ${userId}::uuid FOR UPDATE`;
     if (!row) throw notFound('No encontramos ese usuario.');

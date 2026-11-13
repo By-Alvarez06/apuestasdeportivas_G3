@@ -125,6 +125,16 @@ describe('US5 · Administración y autorización (T058, SC-007)', () => {
     );
   });
 
+  it('dos administradores que se quitan el rol a la vez no dejan el sistema sin administradores', async () => {
+    const other = await signedInUser(app, prisma, { role: Role.ADMIN });
+    const results = await Promise.all([
+      call('patch', `/admin/users/${other.id}/role`, admin.cookie, { role: 'BETTOR' }),
+      call('patch', `/admin/users/${admin.id}/role`, other.cookie, { role: 'BETTOR' }),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await prisma.user.count({ where: { role: Role.ADMIN } })).toBe(1);
+  });
+
   it('suspender cierra la sesión al instante e impide iniciar sesión', async () => {
     const target = await signedInUser(app, prisma);
     await call('patch', `/admin/users/${target.id}/status`, admin.cookie, {

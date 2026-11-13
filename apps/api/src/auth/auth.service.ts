@@ -186,7 +186,7 @@ export class AuthService {
   }
 
   async logout(userId: string, familyId: string, meta: RequestMeta): Promise<void> {
-    await this.tokens.revokeFamily(familyId);
+    await this.tokens.revokeFamily(userId, familyId);
     await this.audit.record({ actorId: userId, action: 'auth.logout', ...meta });
   }
 

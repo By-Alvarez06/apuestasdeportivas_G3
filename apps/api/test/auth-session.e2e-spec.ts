@@ -76,6 +76,13 @@ describe('US1 · Sesiones, cierre y recuperación de contraseña (T021)', () => 
     expect(await prisma.auditLog.count({ where: { action: 'auth.refresh.reuse' } })).toBe(1);
   });
 
+  it('renovaciones simultáneas con el mismo refresh no dejan ninguna sesión viva', async () => {
+    const cookie = await login();
+    await Promise.all(Array.from({ length: 10 }, () => post('/auth/refresh', {}, cookie)));
+    // Una gana y las demás detectan el reuso: la revocación alcanza también al sucesor recién creado.
+    expect(await prisma.refreshToken.count({ where: { revokedAt: null } })).toBe(0);
+  });
+
   it('sin cookie de refresh o con una inventada responde 401', async () => {
     await post('/auth/refresh').expect(401);
     await post('/auth/refresh', {}, 'refresh_token=inventado').expect(401);
