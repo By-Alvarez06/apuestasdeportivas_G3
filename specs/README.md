@@ -1,24 +1,30 @@
 # Catálogo de specs
 
-Listado de especificaciones previstas (Spec Kit), en orden de construcción. Cada spec se crea con
-`/speckit-specify` en una rama `feature/NNN-nombre` y su carpeta vive en `specs/NNN-nombre/`.
+Cuatro specs, una por integrante, en orden de construcción. Cada spec se desarrolla con SDD (Spec
+Kit: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-implement`) en su rama
+`feature/spec-N`, y su carpeta vive en `specs/00N-nombre/`.
 
 Fuente: fases de [`PLAN.md`](../PLAN.md). Reglas: [constitución](../.specify/memory/constitution.md).
 
-| # | Spec | Fase | Alcance | Estado |
-|---|------|------|---------|--------|
-| 001 | `001-fundaciones-monorepo` | F0 | Monorepo con las tres apps, CI/CD, SonarQube, despliegues Vercel/Render y Grafana | Pendiente |
-| 002 | `002-autenticacion-roles` | F1 | Registro, login, 2FA, roles (RBAC), bloqueo por intentos fallidos y auditoría | Pendiente |
-| 003 | `003-billetera-ledger` | F2 | Ledger de doble entrada, saldo real y de bono, bloqueo de concurrencia | Pendiente |
-| 004 | `004-depositos-payphone` | F2 | Depósitos con Payphone sandbox y confirmación servidor a servidor | Pendiente |
-| 005 | `005-partidos-mercados` | F3 | Partidos, máquina de estados, mercados y cuotas, gestión del operador | Pendiente |
-| 006 | `006-sincronizacion-api-football` | F3 | Worker de API-Football con presupuesto diario y frecuencia adaptativa | Pendiente |
-| 007 | `007-apuestas-simples-combinadas` | F4 | Boleto de apuesta, aceptación atómica, cuota congelada, límites | Pendiente |
-| 008 | `008-liquidacion-tiempo-real` | F5 | Liquidación idempotente, WebSocket, objetivo ≤ 5 s, re-liquidación auditada | Pendiente |
-| 009 | `009-suspensiones-aplazamientos` | F5 | Plazo de reanudación, anulación y reembolso, cuota 1.00 en combinadas | Pendiente |
-| 010 | `010-promociones-cupones` | F6 | Cupones, rollover y controles anti-abuso | Pendiente |
-| 011 | `011-retiros` | F6 | Retiros con 2FA, solo al mismo titular y revisión manual | Pendiente |
-| 012 | `012-deteccion-fraude` | F6 | Reglas de detección (cuentas múltiples, apuestas anómalas) y alertas | Pendiente |
-| 013 | `013-reportes-dashboard` | F7 | Servicio de reportes en Python, dashboard y exportación CSV/PDF | Pendiente |
+| # | Rama | Carpeta | Responsable | Alcance | Depende de | Estado |
+|---|------|---------|-------------|---------|------------|--------|
+| 1 | `feature/spec-1` | `specs/001-fundaciones-monorepo` | Líder | Monorepo con las tres apps (web, api, reports), paquete compartido, Docker (PostgreSQL + Redis), CI, convenciones de commits | — | Terminada |
+| 2 | `feature/spec-2` | `specs/002-cuentas-billetera` | — | Registro, login, 2FA, roles (RBAC), bloqueo por intentos fallidos, auditoría; ledger de doble entrada con saldo real y de bono; depósitos con Payphone sandbox (confirmación servidor a servidor); retiros con 2FA, mismo titular y revisión manual | 1 | Pendiente |
+| 3 | `feature/spec-3` | `specs/003-partidos-mercados` | — | Partidos y máquina de estados, mercados y cuotas, gestión del operador; worker de API-Football con presupuesto diario y frecuencia adaptativa; servicio de reportes en Python con dashboard y exportación CSV/PDF | 1 | Pendiente |
+| 4 | `feature/spec-4` | `specs/004-apuestas-liquidacion` | — | Apuestas simples y combinadas (aceptación atómica, cuota congelada, límites); liquidación idempotente en tiempo real por WebSocket; suspensiones y aplazamientos (reembolso, cuota 1.00 en combinadas); promociones y cupones; detección de fraude | 2, 3 | Pendiente |
 
-Al crear o cerrar una spec, actualiza su fila (Pendiente → En curso → Terminada).
+Specs 2 y 3 pueden avanzar en paralelo. La spec 4 necesita la billetera (2) y los partidos y
+mercados (3); mientras no estén integradas, trabaja contra interfaces simuladas.
+
+## Origen
+
+Las cuatro specs agrupan el catálogo original de 13:
+
+| Spec | Specs originales |
+|------|------------------|
+| 1 | 001 fundaciones-monorepo |
+| 2 | 002 autenticación-roles, 003 billetera-ledger, 004 depósitos-payphone, 011 retiros |
+| 3 | 005 partidos-mercados, 006 sincronización-api-football, 013 reportes-dashboard |
+| 4 | 007 apuestas-simples-combinadas, 008 liquidación-tiempo-real, 009 suspensiones-aplazamientos, 010 promociones-cupones, 012 detección-fraude |
+
+Al crear o cerrar una spec, actualiza su fila (Pendiente → En curso → Terminada) y el responsable.
