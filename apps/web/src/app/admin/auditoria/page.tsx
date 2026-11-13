@@ -32,7 +32,8 @@ function Audit() {
     const q = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
     if (filters.action) q.set('action', filters.action);
     if (filters.actorId) q.set('actorId', filters.actorId);
-    if (filters.from) q.set('from', new Date(filters.from).toISOString());
+    // Ambos límites en la hora local del administrador (new Date('AAAA-MM-DD') sería UTC).
+    if (filters.from) q.set('from', new Date(`${filters.from}T00:00:00`).toISOString());
     if (filters.to) q.set('to', new Date(`${filters.to}T23:59:59`).toISOString());
     try {
       setError('');

@@ -18,15 +18,39 @@ interface RequestOptions {
   idempotencyKey?: string;
 }
 
+/** Rutas de /auth sin sesión: un 401 ahí es la respuesta, no una sesión vencida. */
+const PUBLIC_AUTH = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/verify-email',
+  '/auth/resend-verification',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
 let refreshing: Promise<boolean> | null = null;
 
-/** Renueva la sesión una sola vez aunque varias peticiones reciban 401 a la vez. */
+const doRefresh = () =>
+  fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' }).then((res) => res.ok);
+
+/**
+ * Renueva la sesión una sola vez aunque varias peticiones reciban 401 a la vez. Entre pestañas se
+ * serializa con un Web Lock: la segunda envía el refresh nuevo que dejó la primera en la cookie, en vez
+ * de reusar el viejo (que el servidor trataría como robo y cerraría todas las sesiones).
+ */
 function refreshSession(): Promise<boolean> {
-  refreshing ??= fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-    .then((res) => res.ok)
-    .finally(() => {
-      refreshing = null;
-    });
+  if (!refreshing) {
+    const run: Promise<boolean> = navigator.locks
+      ? // request() resuelve la promesa del callback; el tipo de la lib DOM no lo refleja.
+        (navigator.locks.request('auth-refresh', doRefresh) as unknown as Promise<boolean>)
+      : doRefresh();
+    refreshing = run
+      .catch(() => false)
+      .finally(() => {
+        refreshing = null;
+      });
+  }
   return refreshing;
 }
 
@@ -48,7 +72,11 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
  */
 export async function api<T = void>(path: string, options: RequestOptions = {}): Promise<T> {
   let res = await send(path, options);
-  if (res.status === 401 && !path.startsWith('/auth/') && (await refreshSession())) {
+  if (
+    res.status === 401 &&
+    !PUBLIC_AUTH.some((p) => path.startsWith(p)) &&
+    (await refreshSession())
+  ) {
     res = await send(path, options);
   }
   if (res.status === 204 || res.status === 202) return undefined as T;

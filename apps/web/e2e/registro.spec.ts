@@ -27,6 +27,20 @@ test('una persona se registra, activa su correo e inicia sesión', async ({ page
   const me = await page.request.get('/api/auth/me');
   expect(me.status()).toBe(200);
   expect(await me.json()).toMatchObject({ email, status: 'ACTIVE' });
+
+  // Vence la cookie de acceso (15 min): la web renueva con el refresh y no manda al login.
+  await page.context().clearCookies({ name: 'access_token' });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Movimientos' })).toBeVisible();
+  await expect(page).toHaveURL(/\/billetera$/);
+
+  // Un `volver` que el navegador normaliza a otro dominio no saca al usuario del sitio.
+  await page.getByRole('button', { name: 'Cerrar sesión' }).click();
+  await page.goto('/ingresar?volver=%2F%5Cexample.org');
+  await page.getByLabel('Correo').fill(email);
+  await page.getByLabel('Contraseña').fill(password);
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+  await expect(page).toHaveURL(/localhost:\d+\/billetera$/);
 });
 
 test('una contraseña incorrecta muestra un error claro', async ({ page }) => {

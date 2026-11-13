@@ -8,15 +8,11 @@ import { AuthShell } from '@/components/AuthShell';
 import { Notice } from '@/components/Notice';
 import { Turnstile } from '@/components/Turnstile';
 import { api, messageOf } from '@/lib/api';
-
-/** Solo rutas internas: un `volver` externo sería una redirección abierta. */
-function safeReturn(value: string | null): string | null {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : null;
-}
+import { safeReturn } from '@/lib/safe-return';
 
 function Login() {
   const router = useRouter();
-  const returnTo = safeReturn(useSearchParams().get('volver'));
+  const volver = useSearchParams().get('volver');
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState('');
@@ -34,7 +30,9 @@ function Login() {
         body: { email: data.get('email'), password: data.get('password'), captchaToken },
       });
       const me = await api<{ role: UserRole }>('/auth/me');
-      router.push(returnTo ?? (me.role === UserRole.ADMIN ? '/admin/usuarios' : '/billetera'));
+      router.push(
+        safeReturn(volver) ?? (me.role === UserRole.ADMIN ? '/admin/usuarios' : '/billetera'),
+      );
     } catch (e) {
       setError(messageOf(e));
       setCaptchaReset((n) => n + 1);

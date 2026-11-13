@@ -57,6 +57,8 @@ export function Turnstile({
   useEffect(
     () => () => {
       if (widgetId.current) window.turnstile?.remove(widgetId.current);
+      // Sin esto, el remontaje de StrictMode (o volver a la página) no vuelve a dibujar el CAPTCHA.
+      widgetId.current = null;
     },
     [],
   );
