@@ -101,6 +101,19 @@ describe('Inmutabilidad del libro contable y la auditoría (T008)', () => {
     );
   });
 
+  it('no deja añadir líneas, ni compensadas, a un asiento ya confirmado', async () => {
+    const tx = await postBalanced('cerrado');
+    await expect(
+      prisma.ledgerPosting.createMany({
+        data: [
+          { transactionId: tx.id, accountId: gateway, amount: -900 },
+          { transactionId: tx.id, accountId: house, amount: 900 },
+        ],
+      }),
+    ).rejects.toThrow(/cerrado/);
+    expect(await prisma.ledgerPosting.count({ where: { transactionId: tx.id } })).toBe(2);
+  });
+
   it('no deja editar ni borrar la auditoría', async () => {
     const log = await prisma.auditLog.create({
       data: { action: 'test.action', ip: '127.0.0.1', userAgent: 'jest' },

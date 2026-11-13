@@ -8,6 +8,7 @@ import { validationError } from '../common/errors/domain-error';
 import { IdempotencyKey } from '../common/idempotency-key.decorator';
 import { Meta, type RequestMeta } from '../common/request-meta';
 import { LedgerAccountType, LedgerTransactionType, Role } from '../generated/prisma/enums';
+import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from './wallet.service';
 
 export class AdjustmentDto {
@@ -37,6 +38,7 @@ export class AdjustmentsController {
   constructor(
     private readonly wallet: WalletService,
     private readonly audit: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post()
@@ -54,24 +56,37 @@ export class AdjustmentsController {
       throw validationError('El monto de la corrección no puede ser 0.');
     }
     const userAccount = ACCOUNT[dto.account];
-    const transactionId = await this.wallet.transfer({
-      userId: dto.userId,
-      amount,
-      from: negative ? userAccount : LedgerAccountType.HOUSE,
-      to: negative ? LedgerAccountType.HOUSE : userAccount,
-      type: LedgerTransactionType.ADJUSTMENT,
-      idempotencyKey: `adjustment:${admin.id}:${key}`,
-      reference: { type: 'adjustment', id: dto.userId },
-      reason: dto.reason,
-      createdById: admin.id,
-    });
-    await this.audit.record({
-      actorId: admin.id,
-      action: 'ledger.adjustment',
-      targetType: 'user',
-      targetId: dto.userId,
-      metadata: { account: dto.account, amount: dto.amount, reason: dto.reason, transactionId },
-      ...meta,
+    // Movimiento y auditoría en la misma transacción: no hay corrección sin su registro.
+    const transactionId = await this.prisma.$transaction(async (tx) => {
+      const id = await this.wallet.transfer({
+        userId: dto.userId,
+        amount,
+        from: negative ? userAccount : LedgerAccountType.HOUSE,
+        to: negative ? LedgerAccountType.HOUSE : userAccount,
+        type: LedgerTransactionType.ADJUSTMENT,
+        idempotencyKey: `adjustment:${admin.id}:${key}`,
+        reference: { type: 'adjustment', id: dto.userId },
+        reason: dto.reason,
+        createdById: admin.id,
+        tx,
+      });
+      await this.audit.record(
+        {
+          actorId: admin.id,
+          action: 'ledger.adjustment',
+          targetType: 'user',
+          targetId: dto.userId,
+          metadata: {
+            account: dto.account,
+            amount: dto.amount,
+            reason: dto.reason,
+            transactionId: id,
+          },
+          ...meta,
+        },
+        tx,
+      );
+      return id;
     });
     return { transactionId };
   }
