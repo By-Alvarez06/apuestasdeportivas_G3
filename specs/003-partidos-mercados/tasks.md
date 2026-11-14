@@ -2,7 +2,7 @@
 
 - [ ] T001 Confirmar contratos, alcance, estados, permisos, mercados, presupuesto y reportes en la
   especificación.
-- [ ] T002 Escribir pruebas unitarias de transiciones de partido y validación de marcador.
+- [x] T002 Escribir pruebas unitarias de transiciones de partido y validación de marcador.
 - [ ] T003 Escribir pruebas API de autorización por rol, gestión manual, auditoría e historial de
   cuotas.
 - [ ] T004 Diseñar entidades e índices Prisma para competiciones, equipos, partidos, mercados,
