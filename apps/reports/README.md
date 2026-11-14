@@ -29,3 +29,10 @@ el PDF incluye periodo, filtros y fecha de generación.
 
 El endpoint `/health` no requiere credenciales. Dashboard y exportación requieren
 `Authorization: Bearer <REPORTS_SERVICE_TOKEN>`.
+
+Para crear o rotar el usuario de solo lectura, define `REPORTS_READONLY_PASSWORD` en la sesión
+administrativa de PowerShell y ejecuta `psql <URL_ADMIN> -f apps/reports/read-only-role.sql`.
+Configura `REPORTS_DATABASE_URL` con el usuario `apuestas_reports`. Para comprobar que la cuenta no
+puede modificar datos, define `REPORTS_READONLY_TEST_URL` con esa misma conexión y ejecuta
+`uv run --project apps/reports --extra dev pytest apps/reports/tests/test_reports.py -q`; la prueba
+se omite explícitamente si no se proporciona la credencial.

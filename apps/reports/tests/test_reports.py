@@ -1,11 +1,15 @@
 """Pruebas de validación y exportación del servicio de informes."""
 
+import os
 from datetime import UTC, datetime
 
+import asyncpg
 import pytest
 from app.main import app, csv_export, pdf_export, report_filters
 from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
+
+READONLY_TEST_URL = os.getenv("REPORTS_READONLY_TEST_URL")
 
 
 @pytest.fixture
@@ -96,3 +100,21 @@ def test_pdf_export_returns_a_readable_pdf_document():
         "operatorActivity": [],
     }
     assert pdf_export(report).startswith(b"%PDF-")
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not READONLY_TEST_URL,
+    reason=(
+        "Configura REPORTS_READONLY_TEST_URL con la cuenta apuestas_reports "
+        "para verificar permisos."
+    ),
+)
+async def test_reports_database_account_cannot_write_business_tables():
+    assert READONLY_TEST_URL is not None
+    connection = await asyncpg.connect(READONLY_TEST_URL)
+    try:
+        with pytest.raises(asyncpg.PostgresError):
+            await connection.execute('UPDATE "Match" SET status = status WHERE false')
+    finally:
+        await connection.close()
