@@ -19,7 +19,7 @@ Roles: **B** apostador, **O** operador, **A** administrador. Sin rol listado, 40
 
 | Método | Ruta | Rol | Cuerpo / notas | Respuesta |
 |--------|------|-----|----------------|-----------|
-| POST | `/bets` | B | header `Idempotency-Key`; `{ selections: [{ selectionId, odds }], stake, source: "REAL"\|"BONUS"\|"FREE_BET", freeBetId?, boostRedemptionId? }`. `type` se deduce del número de selecciones | 201 `BetView`; 200 si la clave ya existía con los mismos datos |
+| POST | `/bets` | B | header `Idempotency-Key`; `{ selections: [{ selectionId, odds }], stake, source: "REAL"\|"BONUS"\|"FREE_BET", freeBetId?, boostRedemptionId? }`. `type` se deduce del número de selecciones. Con `FREE_BET`, `stake` debe ser el monto de la apuesta gratis (no aplica mínimo ni máximo ni límite diario). El aumento solo en simples: `odds` es la cuota vigente sin aumento y se congela la aumentada | 201 `BetView`; 200 si la clave ya existía con los mismos datos; 422 `COUPON_INVALID` (`USED`, `EXPIRED`, `NOT_FOUND`) |
 | GET | `/bets` | B | `?status=OPEN\|SETTLED&from=&to=&page=&pageSize=` | lista paginada de `BetView` propias |
 | GET | `/bets/:id` | B (dueño) | — | `BetView` con liquidaciones |
 | GET | `/betting/limits` | B O A | — | `{ minStake, maxStake, maxPayout, dailyStakePerUser, dailyStakeUsed, comboMaxSelections }` |
@@ -55,10 +55,10 @@ día calendario de Ecuador (UTC-5) y solo suma apuestas con saldo real o de bono
 
 | Método | Ruta | Rol | Notas | Respuesta |
 |--------|------|-----|-------|-----------|
-| POST | `/operator/coupons` | O A | `{ code, type, value, cap?, startsAt, endsAt, totalLimit, perUserLimit }` | 201 `CouponView` |
+| POST | `/operator/coupons` | O A | `{ code, type, startsAt, endsAt, totalLimit }` + por tipo: DEPOSIT_BONUS `percent`, `maxBonus`; FREE_BET `amount`; ODDS_BOOST `percent`, `maxBoost?`. Límite por usuario fijo en 1 | 201 `CouponView`; 409 código repetido |
 | GET | `/operator/coupons` | O A | `?status=` | lista con `redeemed` |
 | POST | `/operator/coupons/:id/pause` · `/resume` | O A | auditado | 200 |
-| POST | `/coupons/redeem` | B | `{ code }`; usa la cookie `device_id` | 201 `{ redemptionId, type, status, freeBet?, bonus? }` |
+| POST | `/coupons/redeem` | B | `{ code }`; usa la cookie `device_id` | 201 `{ redemptionId, code, type, status, freeBet? }`; 422 `COUPON_INVALID` (`NOT_FOUND`, `PAUSED`, `NOT_STARTED`, `EXPIRED`, `EXHAUSTED`); 409 `COUPON_ALREADY_USED`; 423 `COUPON_BLOCKED`; 409 `BONUS_ACTIVE` |
 | GET | `/promotions` | B | — | `{ bonus: { amount, wagerRequired, wagerProgress, expiresAt, status } \| null, freeBets: [...], boosts: [...], redemptions: [...] }` |
 
 ## Fraude

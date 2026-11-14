@@ -24,6 +24,11 @@ export class NotifierService {
     for (const userId of new Set(changes.map((c) => c.userId))) await this.walletChanged(userId);
   }
 
+  /** Avance, conversión o caducidad del bono (contracts/realtime.md § bonus.updated). */
+  bonusChanged(userId: string, bonus: unknown): void {
+    this.gateway.emitToUser(userId, 'bonus.updated', bonus);
+  }
+
   async walletChanged(userId: string): Promise<void> {
     try {
       const { real, bonus, held } = await this.wallet.getBalances(userId);

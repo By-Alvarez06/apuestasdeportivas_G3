@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { parseOdds, toCents } from '@apuestas/shared';
+import { fromCents, parseOdds, toCents } from '@apuestas/shared';
 import { AuditService } from '../audit/audit.service';
 import { DomainError, notFound, validationError } from '../common/errors/domain-error';
 import type { RequestMeta } from '../common/request-meta';
@@ -11,8 +11,15 @@ import {
   type SelectionQuote,
 } from '../catalog/match-catalog.port';
 import { Prisma } from '../generated/prisma/client';
-import { BetStatus, BetType, StakeSource } from '../generated/prisma/enums';
+import {
+  BetStatus,
+  BetType,
+  CouponType,
+  RedemptionStatus,
+  StakeSource,
+} from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { couponInvalid } from '../promotions/coupon-errors';
 import { DebtService } from '../settlement/debt.service';
 import { IdempotencyConflictError, WalletNotFoundError } from '../wallet/wallet.port';
 import { WalletService } from '../wallet/wallet.service';
@@ -32,7 +39,7 @@ import {
   type SelectionHold,
   toBetView,
 } from './bets.dto';
-import { potentialPayout, totalOddsX } from './odds';
+import { applyBoost, potentialPayout, totalOddsX } from './odds';
 import { BettingSettingsService } from './settings.service';
 
 /** Contexto de la petición: auditoría y señales para las reglas de fraude. */
@@ -43,6 +50,12 @@ export interface PlaceContext extends RequestMeta {
 interface Requested {
   selectionId: string;
   odds: number;
+}
+
+/** Promoción que usa la apuesta, ya validada. */
+interface Promotion {
+  freeBetId?: string;
+  boost?: { redemptionId: string; percent: number; cap?: number };
 }
 
 /** Estados de partido en los que su mercado puede aceptar apuestas. */
@@ -109,16 +122,32 @@ export class BetsService {
       return { bet: this.replay(previous, stake, dto.source, requested), created: false };
 
     try {
-      if (dto.source === StakeSource.FREE_BET)
-        throw validationError('Las apuestas gratis se usan desde Promociones.');
-      const quotes = await this.validate(stake, requested);
+      const promo = await this.promotionFor(userId, dto, stake, requested.length);
+      // El monto de una apuesta gratis lo fija el cupón: no aplican los límites de monto.
+      const stakeLimits = dto.source !== StakeSource.FREE_BET;
+      const quotes = await this.validate(stake, requested, stakeLimits);
 
       if (quotes.some((q) => this.isLive(q))) {
         await sleep(await this.settings.get('live.delayMs'));
-        await this.validate(stake, requested);
+        await this.validate(stake, requested, stakeLimits);
       }
 
-      const bet = await this.accept(userId, requestKey, stake, dto.source, requested, quotes, ctx);
+      // FR-029: el aumento de cuota se congela con la apuesta.
+      const odds = quotes.map((q) =>
+        promo.boost ? applyBoost(q.odds, promo.boost.percent, promo.boost.cap) : q.odds,
+      );
+      await this.checkPayout(stake, odds);
+
+      const bet = await this.accept(
+        userId,
+        requestKey,
+        stake,
+        dto.source,
+        quotes,
+        odds,
+        promo,
+        ctx,
+      );
       return { bet: toBetView(bet), created: true };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -276,7 +305,11 @@ export class BetsService {
   // ── Validación ──────────────────────────────────────────────────────────────
 
   /** Valida límites, mercados, horas y cuotas con datos del servidor. Devuelve las cotizaciones. */
-  private async validate(stake: number, requested: Requested[]): Promise<SelectionQuote[]> {
+  private async validate(
+    stake: number,
+    requested: Requested[],
+    stakeLimits = true,
+  ): Promise<SelectionQuote[]> {
     const limits = await this.settings.getAll();
     const ids = requested.map((r) => r.selectionId);
     if (new Set(ids).size !== ids.length)
@@ -285,7 +318,7 @@ export class BetsService {
       throw validationError(
         `Una combinada admite como máximo ${limits['combo.maxSelections']} selecciones.`,
       );
-    if (stake < limits['limits.minStake'] || stake > limits['limits.maxStake'])
+    if (stakeLimits && (stake < limits['limits.minStake'] || stake > limits['limits.maxStake']))
       throw stakeOutOfLimits(limits['limits.minStake'], limits['limits.maxStake']);
 
     const found = await this.catalog.getQuotes(ids);
@@ -305,14 +338,62 @@ export class BetsService {
 
     const changed = quotes.filter((q, i) => q.odds !== requested[i]!.odds);
     if (changed.length > 0) throw oddsChanged(changed);
-
-    const odds = quotes.map((q) => q.odds);
-    if (potentialPayout(stake, odds) > limits['limits.maxPayout']) {
-      const product = totalOddsX(odds);
-      const maxStake = (BigInt(limits['limits.maxPayout']) * 100n ** BigInt(odds.length)) / product;
-      throw payoutLimit(Number(maxStake));
-    }
     return quotes;
+  }
+
+  /** Ganancia potencial máxima con las cuotas que se van a congelar (FR-008). */
+  private async checkPayout(stake: number, odds: number[]): Promise<void> {
+    const maxPayout = await this.settings.get('limits.maxPayout');
+    if (potentialPayout(stake, odds) <= maxPayout) return;
+    const maxStake = (BigInt(maxPayout) * 100n ** BigInt(odds.length)) / totalOddsX(odds);
+    throw payoutLimit(Number(maxStake));
+  }
+
+  /** Valida la apuesta gratis o el aumento de cuota pedidos (FR-028, FR-029). */
+  private async promotionFor(
+    userId: string,
+    dto: PlaceBetDto,
+    stake: number,
+    selections: number,
+  ): Promise<Promotion> {
+    const now = new Date();
+    const promo: Promotion = {};
+
+    if (dto.source === StakeSource.FREE_BET) {
+      if (!dto.freeBetId) throw validationError('Elige la apuesta gratis que quieres usar.');
+      const freeBet = await this.prisma.freeBet.findFirst({
+        where: { id: dto.freeBetId, userId },
+      });
+      if (!freeBet) throw couponInvalid('NOT_FOUND');
+      if (freeBet.usedAt) throw couponInvalid('USED');
+      if (freeBet.expiresAt < now) throw couponInvalid('EXPIRED');
+      if (stake !== freeBet.amount)
+        throw validationError(
+          `Esta apuesta gratis es de ${fromCents(freeBet.amount)} USD: usa ese monto.`,
+        );
+      promo.freeBetId = freeBet.id;
+    } else if (dto.freeBetId) {
+      throw validationError('Para usar una apuesta gratis, elige "Apuesta gratis" como saldo.');
+    }
+
+    if (dto.boostRedemptionId) {
+      if (selections !== 1)
+        throw validationError('El aumento de cuota solo se aplica a apuestas simples.');
+      const redemption = await this.prisma.couponRedemption.findFirst({
+        where: { id: dto.boostRedemptionId, userId },
+        include: { coupon: true },
+      });
+      if (!redemption || redemption.coupon.type !== CouponType.ODDS_BOOST)
+        throw couponInvalid('NOT_FOUND');
+      if (redemption.status !== RedemptionStatus.AVAILABLE) throw couponInvalid('USED');
+      if (redemption.coupon.endsAt < now) throw couponInvalid('EXPIRED');
+      promo.boost = {
+        redemptionId: redemption.id,
+        percent: redemption.coupon.value,
+        cap: redemption.coupon.cap ?? undefined,
+      };
+    }
+    return promo;
   }
 
   /** Apuesta en vivo: el partido está en juego y el operador habilitó el mercado para ello. */
@@ -327,11 +408,12 @@ export class BetsService {
     requestKey: string,
     stake: number,
     source: StakeSource,
-    requested: Requested[],
     quotes: SelectionQuote[],
+    odds: number[],
+    promo: Promotion,
     ctx: PlaceContext,
   ): Promise<BetWithSelections> {
-    const odds = quotes.map((q) => q.odds);
+    const freeBet = source === StakeSource.FREE_BET;
     return this.prisma.$transaction(
       async (tx) => {
         // Bloquea la billetera: apuestas simultáneas del mismo usuario se serializan aquí.
@@ -342,9 +424,28 @@ export class BetsService {
         // FR-020: con saldo adeudado por una re-liquidación no se puede apostar.
         await this.debts.assertNoOpenDebt(userId, tx);
 
-        const limit = await this.settings.get('limits.dailyStakePerUser');
-        const used = await this.dailyStakeUsed(userId, tx);
-        if (used + stake > limit) throw dailyLimit(Math.max(0, limit - used));
+        // Las apuestas gratis no cuentan para el límite diario: no mueven saldo del apostador.
+        if (!freeBet) {
+          const limit = await this.settings.get('limits.dailyStakePerUser');
+          const used = await this.dailyStakeUsed(userId, tx);
+          if (used + stake > limit) throw dailyLimit(Math.max(0, limit - used));
+        }
+
+        // La promoción se consume de forma condicional: dos apuestas simultáneas no la usan dos veces.
+        if (promo.freeBetId) {
+          const { count } = await tx.freeBet.updateMany({
+            where: { id: promo.freeBetId, userId, usedAt: null },
+            data: { usedAt: new Date() },
+          });
+          if (count === 0) throw couponInvalid('USED');
+        }
+        if (promo.boost) {
+          const { count } = await tx.couponRedemption.updateMany({
+            where: { id: promo.boost.redemptionId, userId, status: RedemptionStatus.AVAILABLE },
+            data: { status: RedemptionStatus.USED },
+          });
+          if (count === 0) throw couponInvalid('USED');
+        }
 
         const betId = randomUUID();
         const bet = await tx.bet.create({
@@ -352,20 +453,22 @@ export class BetsService {
             id: betId,
             userId,
             requestKey,
-            type: requested.length === 1 ? BetType.SINGLE : BetType.COMBO,
+            type: quotes.length === 1 ? BetType.SINGLE : BetType.COMBO,
             stake,
             source,
             totalOddsX: totalOddsX(odds).toString(),
             potentialPayout: potentialPayout(stake, odds),
+            freeBetId: promo.freeBetId,
+            couponRedemptionId: promo.boost?.redemptionId,
             live: quotes.some((q) => this.isLive(q)),
             deviceId: ctx.deviceId,
             ip: ctx.ip,
             selections: {
-              create: quotes.map((q) => ({
+              create: quotes.map((q, i) => ({
                 selectionId: q.selectionId,
                 marketId: q.marketId,
                 matchId: q.matchId,
-                odds: q.odds,
+                odds: odds[i]!,
                 matchLabel: q.labels.match,
                 marketLabel: q.labels.market,
                 selectionLabel: q.labels.selection,
@@ -376,14 +479,16 @@ export class BetsService {
           include: { selections: true },
         });
 
-        await this.wallet.debit({
-          userId,
-          amount: stake,
-          balance: source === StakeSource.BONUS ? 'BONUS' : 'REAL',
-          idempotencyKey: `bet:${betId}:stake`,
-          reference: { type: 'bet', id: betId },
-          tx,
-        });
+        // La apuesta gratis no descuenta saldo (FR-028).
+        if (!freeBet)
+          await this.wallet.debit({
+            userId,
+            amount: stake,
+            balance: source === StakeSource.BONUS ? 'BONUS' : 'REAL',
+            idempotencyKey: `bet:${betId}:stake`,
+            reference: { type: 'bet', id: betId },
+            tx,
+          });
 
         await this.audit.record(
           {
@@ -397,6 +502,8 @@ export class BetsService {
               source,
               odds,
               potentialPayout: bet.potentialPayout,
+              freeBetId: promo.freeBetId ?? null,
+              boostRedemptionId: promo.boost?.redemptionId ?? null,
               live: bet.live,
               deviceId: ctx.deviceId ?? null,
             },

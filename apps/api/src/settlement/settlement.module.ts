@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BettingModule } from '../betting/betting.module';
+import { PromotionsModule } from '../promotions/promotions.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { DebtModule } from './debt.module';
@@ -12,7 +13,7 @@ import { SettlementService } from './settlement.service';
  * y re-liquidación por corrección con saldo adeudado (US4).
  */
 @Module({
-  imports: [WalletModule, RealtimeModule, DebtModule, BettingModule],
+  imports: [WalletModule, RealtimeModule, DebtModule, BettingModule, PromotionsModule],
   providers: [SettlementService, HoldsService, SettlementProcessor],
   exports: [SettlementService, HoldsService],
 })

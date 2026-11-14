@@ -307,7 +307,8 @@ model Bet {
   /// Pagado en la liquidación vigente.
   payout             Int         @default(0)
   couponRedemptionId String?     @db.Uuid
-  freeBetId          String?     @unique @db.Uuid
+  /// Una apuesta gratis anulada vuelve a estar disponible: puede figurar en más de una apuesta.
+  freeBetId          String?     @db.Uuid
   live               Boolean     @default(false)
   deviceId           String?
   ip                 String

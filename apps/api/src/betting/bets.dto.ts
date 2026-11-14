@@ -9,6 +9,7 @@ import {
   IsISO8601,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Max,
@@ -48,6 +49,16 @@ export class PlaceBetDto {
 
   @IsEnum(StakeSource)
   source!: StakeSource;
+
+  /** Con `source: FREE_BET`: la apuesta gratis a usar (de GET /promotions). */
+  @IsOptional()
+  @IsUUID()
+  freeBetId?: string;
+
+  /** Aumento de cuota canjeado a aplicar (solo apuestas simples). */
+  @IsOptional()
+  @IsUUID()
+  boostRedemptionId?: string;
 }
 
 export class BetsQuery {

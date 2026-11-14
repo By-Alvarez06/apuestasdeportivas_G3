@@ -13,6 +13,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import { betOutcome, type Outcome } from './bet-outcome';
+import { BonusService } from '../promotions/bonus.service';
 import { DebtService } from './debt.service';
 
 /** Apuesta cuyo estado cambió, para avisar a su dueño. */
@@ -39,7 +40,18 @@ const FINAL_VOID: ReadonlySet<HoldResolution> = new Set([
   HoldResolution.CANCELLED,
 ]);
 
-const balanceOf = (source: StakeSource) => (source === StakeSource.BONUS ? 'BONUS' : 'REAL');
+/** Saldo al que vuelve el dinero: la apuesta gratis paga al bono (FR-028). */
+const balanceOf = (source: StakeSource) => (source === StakeSource.REAL ? 'REAL' : 'BONUS');
+
+/**
+ * Lo que se acredita por un resultado. La apuesta gratis paga solo la ganancia neta y, si se anula,
+ * no reembolsa dinero (se devuelve la apuesta gratis).
+ */
+export function creditFor(bet: { source: StakeSource; stake: number }, outcome: Outcome): number {
+  if (outcome.status === BetStatus.OPEN) return 0;
+  if (bet.source !== StakeSource.FREE_BET) return outcome.payout;
+  return outcome.status === BetStatus.WON ? outcome.payout - bet.stake : 0;
+}
 
 /**
  * Liquidación de apuestas (FR-013 a FR-024, research R6–R8). Cada apuesta se procesa en su propia
@@ -55,6 +67,7 @@ export class SettlementService {
     private readonly wallet: WalletService,
     private readonly audit: AuditService,
     private readonly debts: DebtService,
+    private readonly bonuses: BonusService,
   ) {}
 
   /** MARKET_RESULTED: marca las selecciones del mercado y liquida las apuestas que quedan resueltas. */
@@ -165,7 +178,8 @@ export class SettlementService {
         // Ya liquidada: un resultado posterior (p. ej. de otra selección de una combinada perdida)
         // solo se registra. Una corrección re-liquida si cambia el resultado o el pago.
         if (!resettle) return unchanged;
-        if (outcome.status === bet.status && outcome.payout === bet.payout) return unchanged;
+        if (outcome.status === bet.status && creditFor(bet, outcome) === bet.payout)
+          return unchanged;
         return this.resettle(tx, bet, outcome, matchEventId);
       },
       { maxWait: 15_000, timeout: 15_000 },
@@ -180,13 +194,14 @@ export class SettlementService {
     matchEventId: string,
   ): Promise<SettledBet> {
     const version = bet.settledVersion + 1;
+    const credited = creditFor(bet, outcome);
     const ledgerTransactionIds = await this.pay(tx, bet, outcome, version);
     await tx.betSettlement.create({
       data: {
         betId: bet.id,
         version,
         outcome: outcome.status,
-        payout: outcome.payout,
+        payout: credited,
         matchEventId,
         ledgerTransactionIds,
       },
@@ -195,19 +210,20 @@ export class SettlementService {
       where: { id: bet.id },
       data: {
         status: outcome.status,
-        payout: outcome.payout,
+        payout: credited,
         settledVersion: version,
         settledAt: new Date(),
       },
       include: { selections: true },
     });
+    await this.applyPromotions(tx, bet, outcome, credited);
     await this.audit.record(
       {
         ...SYSTEM_META,
         action: outcome.status === BetStatus.VOID ? 'bet.voided' : 'bet.settled',
         targetType: 'bet',
         targetId: bet.id,
-        metadata: { outcome: outcome.status, payout: outcome.payout, version, matchEventId },
+        metadata: { outcome: outcome.status, payout: credited, version, matchEventId },
       },
       tx,
     );
@@ -252,13 +268,14 @@ export class SettlementService {
       if (debt > 0) await this.debts.create(tx, bet.userId, bet.id, debt);
     }
 
+    const credited = creditFor(bet, outcome);
     ledgerTransactionIds.push(...(await this.pay(tx, bet, outcome, version)));
     await tx.betSettlement.create({
       data: {
         betId: bet.id,
         version,
         outcome: outcome.status,
-        payout: outcome.status === BetStatus.OPEN ? 0 : outcome.payout,
+        payout: credited,
         reversedAmount: reversed,
         matchEventId,
         ledgerTransactionIds,
@@ -269,7 +286,7 @@ export class SettlementService {
       where: { id: bet.id },
       data: {
         status: outcome.status,
-        payout: reopened ? 0 : outcome.payout,
+        payout: credited,
         settledVersion: version,
         settledAt: reopened ? null : new Date(),
       },
@@ -285,7 +302,7 @@ export class SettlementService {
           previousOutcome: bet.status,
           previousPayout: bet.payout,
           outcome: outcome.status,
-          payout: reopened ? 0 : outcome.payout,
+          payout: credited,
           version,
           reversed,
           debt,
@@ -297,6 +314,31 @@ export class SettlementService {
     return { userId: bet.userId, bet: toBetView(updated), version, debt };
   }
 
+  /**
+   * Efectos de promociones de la primera liquidación (FR-028, FR-032): la ganancia de una apuesta
+   * gratis abre o amplía un bono con rollover; una apuesta gratis anulada vuelve a estar disponible
+   * si su cupón sigue vigente; una apuesta con bono suma al rollover.
+   */
+  private async applyPromotions(
+    tx: Prisma.TransactionClient,
+    bet: BetWithSelections,
+    outcome: Outcome,
+    credited: number,
+  ): Promise<void> {
+    if (bet.source === StakeSource.FREE_BET) {
+      if (outcome.status === BetStatus.WON && credited > 0)
+        await this.bonuses.grantFromFreeBet(tx, bet.userId, credited, bet.id);
+      if (outcome.status === BetStatus.VOID && bet.freeBetId)
+        await tx.freeBet.updateMany({
+          where: { id: bet.freeBetId, expiresAt: { gt: new Date() } },
+          data: { usedAt: null },
+        });
+      return;
+    }
+    if (outcome.status === BetStatus.WON || outcome.status === BetStatus.LOST)
+      await this.bonuses.recordWager(tx, bet);
+  }
+
   /** Acredita el premio o el reembolso al mismo saldo del que salió el monto (FR-014). */
   private async pay(
     tx: Prisma.TransactionClient,
@@ -304,11 +346,12 @@ export class SettlementService {
     outcome: Outcome,
     version: number,
   ): Promise<string[]> {
-    if (outcome.status === BetStatus.OPEN || outcome.payout <= 0) return [];
+    const amount = creditFor(bet, outcome);
+    if (amount <= 0) return [];
     const refund = outcome.status === BetStatus.VOID;
     const id = await this.wallet.credit({
       userId: bet.userId,
-      amount: outcome.payout,
+      amount,
       balance: balanceOf(bet.source),
       type: refund ? LedgerTransactionType.BET_REFUND : LedgerTransactionType.BET_CREDIT,
       idempotencyKey: `bet:${bet.id}:${refund ? 'refund' : 'payout'}:v${version}`,
