@@ -143,9 +143,9 @@ saldos y avisos; publicarlo de nuevo y comprobar que nada cambia.
 
 🔖 Commit: `feat(api): liquidación idempotente por cola y avisos en tiempo real`
 
-- [ ] T039 [P] [US2] Crear el cliente `lib/live.ts` (conexión con `withCredentials`, reconexión con `POST /auth/refresh` ante `TOKEN_EXPIRED`, recarga de `GET /bets` y `GET /wallet` al reconectar, descarte de eventos con versión vieja) y `LiveProvider` en `apps/web/src/lib/live.ts` y `apps/web/src/components/LiveProvider.tsx`
-- [ ] T040 [US2] Conectar `/mis-apuestas` y el saldo de `AppShell` a `LiveProvider`: el estado y el saldo cambian sin recargar y se anuncian con `aria-live="polite"` (respetando `prefers-reduced-motion`), en `apps/web/src/app/mis-apuestas/page.tsx` y `apps/web/src/components/AppShell.tsx`
-- [ ] T041 [US2] Prueba E2E con Playwright: depositar, apostar, publicar el resultado por `/dev/catalog/events` y ver la apuesta ganada y el saldo nuevo sin recargar en menos de 5 s, en `apps/web/e2e/betting.spec.ts`
+- [X] T039 [P] [US2] Crear el cliente `lib/live.ts` (conexión con `withCredentials`, reconexión con `POST /auth/refresh` ante `TOKEN_EXPIRED`, recarga de `GET /bets` y `GET /wallet` al reconectar, descarte de eventos con versión vieja) y `LiveProvider` en `apps/web/src/lib/live.ts` y `apps/web/src/components/LiveProvider.tsx`
+- [X] T040 [US2] Conectar `/mis-apuestas` y el saldo de `AppShell` a `LiveProvider`: el estado y el saldo cambian sin recargar y se anuncian con `aria-live="polite"` (respetando `prefers-reduced-motion`), en `apps/web/src/app/mis-apuestas/page.tsx` y `apps/web/src/components/AppShell.tsx`
+- [X] T041 [US2] Prueba E2E con Playwright: depositar, apostar, publicar el resultado por `/dev/catalog/events` y ver la apuesta ganada y el saldo nuevo sin recargar en menos de 5 s, en `apps/web/e2e/betting.spec.ts`
 
 🔖 Commit: `feat(web): resultado de apuestas y saldo en vivo`
 

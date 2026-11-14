@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { UserRole } from '@apuestas/shared';
 import { AppShell } from '@/components/AppShell';
 import { BetSlip, type SlipBalances } from '@/components/BetSlip';
+import { useLive } from '@/components/LiveProvider';
 import { Notice } from '@/components/Notice';
 import { api, messageOf } from '@/lib/api';
 import {
@@ -58,6 +59,8 @@ function Betting() {
   useEffect(() => {
     void load();
   }, [load]);
+  useLive('wallet.updated', (w) => setBalances({ real: w.real, bonus: w.bonus }));
+  useLive('resync', () => void load());
 
   function toggle(selection: SlipSelection) {
     setPlaced(null);

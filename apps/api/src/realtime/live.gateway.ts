@@ -43,6 +43,8 @@ interface SocketData {
  */
 @WebSocketGateway({
   namespace: '/live',
+  // Acepta /socket.io?EIO=… además de /socket.io/?EIO=…: el proxy de Next quita la barra final.
+  addTrailingSlash: false,
   cors: {
     origin: (origin: string | undefined, cb: (err: Error | null, ok?: boolean) => void) =>
       cb(null, !origin || origin === webUrl()),

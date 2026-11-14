@@ -41,7 +41,7 @@ const doRefresh = () =>
  * serializa con un Web Lock: la segunda envía el refresh nuevo que dejó la primera en la cookie, en vez
  * de reusar el viejo (que el servidor trataría como robo y cerraría todas las sesiones).
  */
-function refreshSession(): Promise<boolean> {
+export function refreshSession(): Promise<boolean> {
   if (!refreshing) {
     const run: Promise<boolean> = navigator.locks
       ? // request() resuelve la promesa del callback; el tipo de la lib DOM no lo refleja.

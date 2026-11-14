@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { UserRole } from '@apuestas/shared';
 import { AppShell } from '@/components/AppShell';
+import { useLive } from '@/components/LiveProvider';
 import { Notice } from '@/components/Notice';
 import { api, messageOf } from '@/lib/api';
 import {
@@ -30,6 +31,24 @@ const SOURCE_LABEL: Record<BetView['source'], string> = {
   FREE_BET: 'Apuesta gratis',
 };
 
+/** "Tu apuesta a Barcelona SC ganó: cobraste $21.00." */
+function resultText(bet: BetView): string {
+  const what =
+    bet.type === 'COMBO'
+      ? `Tu combinada de ${bet.selections.length}`
+      : `Tu apuesta a ${bet.selections[0]?.selectionLabel ?? ''}`;
+  switch (bet.status) {
+    case 'WON':
+      return `${what} ganó: cobraste ${usd(bet.payout)}.`;
+    case 'LOST':
+      return `${what} perdió.`;
+    case 'VOID':
+      return `${what} se anuló: te devolvimos ${usd(bet.payout)}.`;
+    default:
+      return '';
+  }
+}
+
 function MyBets() {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]['value']>('OPEN');
   const [page, setPage] = useState(1);
@@ -50,6 +69,15 @@ function MyBets() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // En vivo: la apuesta cambia en su lugar (aunque el filtro sea "En juego", para que se vea qué
+  // pasó) y el resultado se anuncia. Al reconectar se recarga lo que pudo perderse.
+  const [announcement, setAnnouncement] = useState('');
+  useLive('bet.updated', ({ bet }) => {
+    setData((d) => d && { ...d, items: d.items.map((b) => (b.id === bet.id ? bet : b)) });
+    if (bet.status !== 'OPEN') setAnnouncement(resultText(bet));
+  });
+  useLive('resync', () => void load());
 
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
@@ -75,6 +103,10 @@ function MyBets() {
       </div>
 
       {error && <Notice tone="error">{error}</Notice>}
+      {/* La región existe desde el inicio para que el lector de pantalla anuncie cada resultado. */}
+      <div aria-live="polite" aria-atomic="true">
+        {announcement && <p className="notice">{announcement}</p>}
+      </div>
       {data === null && !error && <p role="status">Cargando tus apuestas…</p>}
       {data?.items.length === 0 && (
         <p className="muted">

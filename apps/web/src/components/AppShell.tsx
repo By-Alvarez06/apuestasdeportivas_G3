@@ -5,7 +5,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ErrorCode, UserRole } from '@apuestas/shared';
 import { api, ApiError } from '@/lib/api';
+import { usd } from '@/lib/format';
 import styles from './AppShell.module.css';
+import { LiveProvider, useLive } from './LiveProvider';
 
 export interface Me {
   id: string;
@@ -72,13 +74,15 @@ export function AppShell({ roles, children }: { roles?: UserRole[]; children: Re
     );
 
   const allowed = !roles || roles.includes(me.role);
+  const bettor = me.role === UserRole.BETTOR;
 
-  return (
+  const shell = (
     <SessionContext.Provider value={{ me, reload: () => setVersion((v) => v + 1) }}>
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>
           Apuestas Deportivas
         </Link>
+        {bettor && <Balance />}
         <nav aria-label="Principal" className={styles.nav}>
           {NAV.filter((item) => item.roles.includes(me.role)).map((item) => (
             <Link
@@ -104,5 +108,28 @@ export function AppShell({ roles, children }: { roles?: UserRole[]; children: Re
         )}
       </main>
     </SessionContext.Provider>
+  );
+
+  // Solo los apostadores reciben avisos en vivo de sus apuestas y su saldo.
+  return bettor ? <LiveProvider>{shell}</LiveProvider> : shell;
+}
+
+/** Saldo disponible en la cabecera; cambia al instante cuando se liquida una apuesta. */
+function Balance() {
+  const [real, setReal] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<{ real: string }>('/wallet')
+      .then((w) => setReal(w.real))
+      .catch(() => setReal(null));
+  }, []);
+  useLive('wallet.updated', (w) => setReal(w.real));
+
+  if (real === null) return null;
+  return (
+    <Link href="/billetera" className={styles.balance}>
+      <span className="visually-hidden">Saldo disponible: </span>
+      {usd(real)}
+    </Link>
   );
 }
