@@ -68,5 +68,5 @@ La seguridad antifraude es el criterio prioritario del proyecto. Al tocar dinero
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-`specs/002-cuentas-billetera/plan.md`
+`specs/004-apuestas-liquidacion/plan.md`
 <!-- SPECKIT END -->
