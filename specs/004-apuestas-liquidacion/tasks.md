@@ -72,9 +72,9 @@ usan todas las historias.
 🔖 Commit: `feat(api): puerto del catálogo de partidos y catálogo simulado`
 
 - [X] T016 Configurar BullMQ (`BullModule.forRootAsync` con `REDIS_URL` y `BULLMQ_PREFIX`) y registrar las colas `match-events` y `fraud-checks` con reintentos exponenciales (5 intentos) en `apps/api/src/queues/queues.module.ts`, importado en `apps/api/src/app.module.ts`
-- [ ] T017 [P] Pruebas primero, luego `BettingSettingsService`: valores por defecto de [data-model.md](data-model.md), validación por clave (enteros positivos, `minStake < maxStake`), caché de 10 s invalidada al escribir, y `set(key, value, actor, meta)` que audita `settings.changed` con valor anterior y nuevo, en `apps/api/src/betting/settings.service.ts` y `apps/api/src/betting/settings.service.spec.ts`
-- [ ] T018 [P] Extraer de `AuthGuard` la verificación de token + sesión viva + usuario no suspendido a `SessionVerifier.verify(token)` en `apps/api/src/common/auth/session-verifier.ts`; `AuthGuard` la usa sin cambiar comportamiento (debe seguir pasando `apps/api/test/access.e2e-spec.ts`)
-- [ ] T019 [P] Crear `DeviceIdMiddleware` (cookie httpOnly `device_id`, UUID, 2 años, `SameSite=Lax`, `Secure` en producción; la pone si falta y la expone como `req.deviceId`) y el decorador `@DeviceId()`, en `apps/api/src/common/device-id.middleware.ts`, registrado en `apps/api/src/app.module.ts`
+- [X] T017 [P] Pruebas primero, luego `BettingSettingsService`: valores por defecto de [data-model.md](data-model.md), validación por clave (enteros positivos, `minStake < maxStake`), caché de 10 s invalidada al escribir, y `set(key, value, actor, meta)` que audita `settings.changed` con valor anterior y nuevo, en `apps/api/src/betting/settings.service.ts` y `apps/api/src/betting/settings.service.spec.ts`
+- [X] T018 [P] Extraer de `AuthGuard` la verificación de token + sesión viva + usuario no suspendido a `SessionVerifier.verify(token)` en `apps/api/src/common/auth/session-verifier.ts`; `AuthGuard` la usa sin cambiar comportamiento (debe seguir pasando `apps/api/test/access.e2e-spec.ts`)
+- [X] T019 [P] Crear `DeviceIdMiddleware` (cookie httpOnly `device_id`, UUID, 2 años, `SameSite=Lax`, `Secure` en producción; la pone si falta y la expone como `req.deviceId`) y el decorador `@DeviceId()`, en `apps/api/src/common/device-id.middleware.ts`, registrado en `apps/api/src/app.setup.ts` tras `cookie-parser`
 
 🔖 Commit: `feat(api): colas, ajustes de apuestas, verificador de sesión e id de dispositivo`
 

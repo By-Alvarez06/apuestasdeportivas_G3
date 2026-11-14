@@ -1,13 +1,18 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthGuard } from './auth.guard';
 import { RolesGuard } from './roles.guard';
+import { SessionVerifier } from './session-verifier';
 
 const DEV_SECRET = 'change-me-in-production';
 
-/** JWT y guards globales: toda ruta exige sesión y rol salvo las marcadas @Public(). */
+/**
+ * JWT y guards globales: toda ruta exige sesión y rol salvo las marcadas @Public(). Exporta
+ * SessionVerifier para el gateway de tiempo real.
+ */
+@Global()
 @Module({
   imports: [
     JwtModule.registerAsync({
@@ -28,9 +33,11 @@ const DEV_SECRET = 'change-me-in-production';
     }),
   ],
   providers: [
+    SessionVerifier,
     // El orden importa: primero se autentica, luego se autoriza.
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
+  exports: [SessionVerifier],
 })
 export class AccessModule {}
