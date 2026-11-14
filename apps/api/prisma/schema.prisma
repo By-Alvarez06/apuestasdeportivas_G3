@@ -306,6 +306,7 @@ model Match {
   awayTeam      Team         @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
   kickoffAt     DateTime
   status        MatchStatus  @default(SCHEDULED)
+  statusSource  OddsSource   @default(MANUAL)
   homeScore     Int?
   awayScore     Int?
   createdAt     DateTime     @default(now())
