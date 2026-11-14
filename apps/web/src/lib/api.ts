@@ -6,13 +6,15 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: ErrorCode,
     message: string,
+    /** Datos para resolver el error, p. ej. las cuotas nuevas de ODDS_CHANGED. */
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
   }
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT';
   body?: unknown;
   /** Para operaciones de dinero (FR-017). */
   idempotencyKey?: string;
@@ -88,6 +90,7 @@ export async function api<T = void>(path: string, options: RequestOptions = {}):
       error?.code ?? ErrorCode.INTERNAL_ERROR,
       error?.message ??
         'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      error?.details,
     );
   }
   return data as T;

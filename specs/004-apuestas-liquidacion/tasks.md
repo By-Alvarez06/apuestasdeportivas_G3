@@ -108,10 +108,10 @@ válidas e inválidas y comprobar que solo las válidas se aceptan y el saldo ba
 
 🔖 Commit: `feat(api): ajustes de límites de apuestas para operadores`
 
-- [ ] T027 [P] [US1] Crear el componente `BetSlip` (selección, monto, pago potencial informativo, elección de saldo, botón "Confirmar apuesta de X USD", aviso de cuota cambiada con botón "Aceptar nueva cuota", mensajes de error de cada `ErrorCode`, `aria-live` para el resultado) en `apps/web/src/components/BetSlip.tsx` y `BetSlip.module.css`, siguiendo el skill `frontend-design`
-- [ ] T028 [US1] Crear la página `/apuestas` (partidos y mercados de `GET /catalog/matches`, selección → `BetSlip`, `Idempotency-Key` generado por intento de confirmación) en `apps/web/src/app/apuestas/page.tsx`, y añadir "Apostar" y "Mis apuestas" a `apps/web/src/components/AppShell.tsx`
-- [ ] T029 [US1] Crear la página `/mis-apuestas` (historial paginado, filtros abiertas/liquidadas, detalle con cuotas congeladas) en `apps/web/src/app/mis-apuestas/page.tsx`
-- [ ] T030 [P] [US1] Crear la página `/operador/ajustes` (editar límites, retardo en vivo, plazo de suspensión) en `apps/web/src/app/operador/ajustes/page.tsx`
+- [X] T027 [P] [US1] Crear el componente `BetSlip` (selección, monto, pago potencial informativo, elección de saldo, botón "Confirmar apuesta de X USD", aviso de cuota cambiada con botón "Aceptar nueva cuota", mensajes de error de cada `ErrorCode`, `aria-live` para el resultado) en `apps/web/src/components/BetSlip.tsx` y `BetSlip.module.css`, siguiendo el skill `frontend-design`
+- [X] T028 [US1] Crear la página `/apuestas` (partidos y mercados de `GET /catalog/matches`, selección → `BetSlip`, `Idempotency-Key` generado por intento de confirmación) en `apps/web/src/app/apuestas/page.tsx`, y añadir "Apostar" y "Mis apuestas" a `apps/web/src/components/AppShell.tsx`
+- [X] T029 [US1] Crear la página `/mis-apuestas` (historial paginado, filtros abiertas/liquidadas, detalle con cuotas congeladas) en `apps/web/src/app/mis-apuestas/page.tsx`
+- [X] T030 [P] [US1] Crear la página `/operador/ajustes` (editar límites, retardo en vivo, plazo de suspensión) en `apps/web/src/app/operador/ajustes/page.tsx`
 
 🔖 Commit: `feat(web): boleto de apuesta simple, historial y ajustes de operador`
 
