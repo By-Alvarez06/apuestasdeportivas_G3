@@ -153,6 +153,11 @@ export class BettingSettingsService {
     private readonly audit: AuditService,
   ) {}
 
+  /** Fuerza a releer de la base en la próxima lectura (pruebas, o tras cambios hechos por otra vía). */
+  clearCache(): void {
+    this.cache = null;
+  }
+
   async get(key: SettingKey): Promise<number> {
     return (await this.getAll())[key];
   }

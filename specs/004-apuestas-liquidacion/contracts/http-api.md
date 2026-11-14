@@ -24,8 +24,15 @@ Roles: **B** apostador, **O** operador, **A** administrador. Sin rol listado, 40
 | GET | `/bets/:id` | B (dueño) | — | `BetView` con liquidaciones |
 | GET | `/betting/limits` | B O A | — | `{ minStake, maxStake, maxPayout, dailyStakePerUser, dailyStakeUsed, comboMaxSelections }` |
 
-`BetView`: `{ id, type, status, stake, source, totalOdds, potentialPayout, payout, acceptedAt,
-settledAt, selections: [{ id, matchLabel, marketLabel, selectionLabel, odds, status, startsAt }] }`.
+`BetView`: `{ id, type, status, stake, source, totalOdds, potentialPayout, payout, live, acceptedAt,
+settledAt, selections: [{ id, selectionId, matchLabel, marketLabel, selectionLabel, odds, status,
+startsAt }] }`. `totalOdds` se trunca a 2 decimales solo para mostrar; el pago usa el producto exacto.
+
+Orden de validación en `POST /bets`: formato (400) → límites de monto (422) → selección inexistente
+(404) → mercado o partido no apostable (409 `MARKET_CLOSED` / `MATCH_STARTED`) → cuota distinta
+(409 `ODDS_CHANGED`) → ganancia máxima (422) → [retardo en vivo y revalidación] → con la billetera
+bloqueada: límite diario (422) y saldo (422 `INSUFFICIENT_FUNDS`). El límite diario se cuenta por
+día calendario de Ecuador (UTC-5) y solo suma apuestas con saldo real o de bono.
 
 ## Catálogo provisional (lo reemplaza la spec 3)
 

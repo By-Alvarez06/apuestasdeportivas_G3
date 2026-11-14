@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BettingModule } from './betting/betting.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { AccessModule } from './common/auth/access.module';
 import { DepositsModule } from './deposits/deposits.module';
@@ -39,6 +40,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     // Spec 4
     QueuesModule,
     CatalogModule,
+    BettingModule,
     HealthModule,
   ],
 })
