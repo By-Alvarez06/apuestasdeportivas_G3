@@ -29,7 +29,13 @@ export function useSession() {
 const NAV: { href: string; label: string; roles: UserRole[] }[] = [
   { href: '/apuestas', label: 'Apostar', roles: [UserRole.BETTOR] },
   { href: '/mis-apuestas', label: 'Mis apuestas', roles: [UserRole.BETTOR] },
+  { href: '/promociones', label: 'Promociones', roles: [UserRole.BETTOR] },
   { href: '/billetera', label: 'Billetera', roles: [UserRole.BETTOR] },
+  {
+    href: '/operador/cupones',
+    label: 'Cupones',
+    roles: [UserRole.OPERATOR, UserRole.ADMIN],
+  },
   {
     href: '/operador/partidos-en-espera',
     label: 'Partidos en espera',

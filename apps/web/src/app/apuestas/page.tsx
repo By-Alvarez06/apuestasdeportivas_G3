@@ -12,6 +12,7 @@ import {
   type BettingLimits,
   type BetView,
   type CatalogMatch,
+  type Promotions,
   type SlipSelection,
   splitMatchLabel,
 } from '@/lib/bets';
@@ -37,6 +38,7 @@ function Betting() {
   const [matches, setMatches] = useState<CatalogMatch[] | null>(null);
   const [balances, setBalances] = useState<SlipBalances | null>(null);
   const [limits, setLimits] = useState<BettingLimits | null>(null);
+  const [promotions, setPromotions] = useState<Promotions | null>(null);
   const [slip, setSlip] = useState<SlipSelection[]>([]);
   const [placed, setPlaced] = useState<BetView | null>(null);
   const [slipNote, setSlipNote] = useState('');
@@ -44,14 +46,16 @@ function Betting() {
 
   const load = useCallback(async () => {
     try {
-      const [m, b, l] = await Promise.all([
+      const [m, b, l, p] = await Promise.all([
         api<CatalogMatch[]>('/catalog/matches'),
         api<SlipBalances>('/wallet'),
         api<BettingLimits>('/betting/limits'),
+        api<Promotions>('/promotions'),
       ]);
       setMatches(m);
       setBalances(b);
       setLimits(l);
+      setPromotions(p);
     } catch (e) {
       setError(messageOf(e));
     }
@@ -154,6 +158,7 @@ function Betting() {
           selections={slip}
           balances={balances}
           limits={limits}
+          promotions={promotions}
           onRemove={(id) => {
             setSlipNote('');
             setSlip((current) => current.filter((s) => s.selectionId !== id));

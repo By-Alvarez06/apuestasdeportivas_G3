@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import {
+  applyBoost,
   displayTotalOdds,
   ErrorCode,
   fromCents,
@@ -12,8 +13,14 @@ import {
 } from '@apuestas/shared';
 import { Notice } from '@/components/Notice';
 import { api, ApiError, messageOf, newIdempotencyKey } from '@/lib/api';
-import { type BettingLimits, type BetView, type SlipSelection, splitMatchLabel } from '@/lib/bets';
-import { usd } from '@/lib/format';
+import {
+  type BettingLimits,
+  type BetView,
+  type Promotions,
+  type SlipSelection,
+  splitMatchLabel,
+} from '@/lib/bets';
+import { dateTime, usd } from '@/lib/format';
 import styles from './BetSlip.module.css';
 
 export interface SlipBalances {
@@ -25,12 +32,17 @@ interface Props {
   selections: SlipSelection[];
   balances: SlipBalances | null;
   limits: BettingLimits | null;
+  /** Apuestas gratis y aumentos disponibles (GET /promotions). */
+  promotions: Pick<Promotions, 'freeBets' | 'boosts'> | null;
   onRemove: (selectionId: string) => void;
   onClear: () => void;
   /** La API informó cuotas nuevas: el boleto se actualiza para que el apostador las revise. */
   onOddsChanged: (quotes: { selectionId: string; odds: string }[]) => void;
   onPlaced: (bet: BetView) => void;
 }
+
+/** Con qué se paga: saldo, bono o una apuesta gratis concreta (`free:<id>`). */
+type Pay = 'REAL' | 'BONUS' | `free:${string}`;
 
 const PRESETS = ['5.00', '10.00', '20.00', '50.00'];
 const MONEY = /^\d{1,8}(\.\d{1,2})?$/;
@@ -51,12 +63,13 @@ function normalize(value: string): string | null {
 
 /**
  * Boleto de apuesta. Muestra un pago estimado con el mismo cálculo que la API, pero la API decide:
- * relee las cuotas, aplica límites y descuenta el saldo al aceptar.
+ * relee las cuotas, aplica límites y promociones y descuenta el saldo al aceptar.
  */
 export function BetSlip({
   selections,
   balances,
   limits,
+  promotions,
   onRemove,
   onClear,
   onOddsChanged,
@@ -65,17 +78,44 @@ export function BetSlip({
   const headingId = useId();
   const stakeId = useId();
   const [stakeInput, setStakeInput] = useState('10.00');
-  const [source, setSource] = useState<'REAL' | 'BONUS'>('REAL');
+  const [pay, setPay] = useState<Pay>('REAL');
+  const [boostId, setBoostId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
 
-  const stake = normalize(stakeInput);
-  const odds = selections.map((s) => parseOdds(s.odds));
+  const freeBets = promotions?.freeBets ?? [];
+  const freeBet = pay.startsWith('free:')
+    ? freeBets.find((f) => `free:${f.id}` === pay)
+    : undefined;
+  const single = selections.length === 1;
+  const boost = single ? promotions?.boosts.find((b) => b.redemptionId === boostId) : undefined;
+
+  // Si la apuesta gratis o el aumento elegidos ya no están (usados o el boleto cambió), se olvidan.
+  useEffect(() => {
+    if (pay.startsWith('free:') && !freeBet) setPay('REAL');
+  }, [pay, freeBet]);
+  useEffect(() => {
+    if (boostId && !boost) setBoostId('');
+  }, [boostId, boost]);
+
+  const stake = freeBet ? freeBet.amount : normalize(stakeInput);
+  const quoted = selections.map((s) => parseOdds(s.odds));
+  const odds = boost
+    ? quoted.map((o) =>
+        applyBoost(o, boost.percent, boost.maxBoost ? toCents(boost.maxBoost) : undefined),
+      )
+    : quoted;
   const live = selections.some((s) => s.live);
+  const source = freeBet ? 'FREE_BET' : (pay as 'REAL' | 'BONUS');
 
   // Una clave por intención: cambia si cambia lo que se apuesta, se conserva al reintentar lo mismo.
-  const intent = JSON.stringify([selections.map((s) => [s.selectionId, s.odds]), stake, source]);
+  const intent = JSON.stringify([
+    selections.map((s) => [s.selectionId, s.odds]),
+    stake,
+    pay,
+    boostId,
+  ]);
   const keyRef = useRef({ intent, key: newIdempotencyKey() });
   if (keyRef.current.intent !== intent) keyRef.current = { intent, key: newIdempotencyKey() };
 
@@ -83,10 +123,13 @@ export function BetSlip({
     setError('');
   }, [intent]);
 
+  const gross = stake && odds.length > 0 ? potentialPayout(toCents(stake), odds) : null;
+  // La apuesta gratis paga solo la ganancia, al bono.
   const estimate =
-    stake && odds.length > 0 ? fromCents(potentialPayout(toCents(stake), odds)) : null;
+    gross === null ? null : fromCents(freeBet ? gross - toCents(freeBet.amount) : gross);
 
-  const available = balances ? (source === 'REAL' ? balances.real : balances.bonus) : null;
+  const available =
+    balances && !freeBet ? (source === 'REAL' ? balances.real : balances.bonus) : null;
 
   async function confirm() {
     if (!stake) {
@@ -104,8 +147,12 @@ export function BetSlip({
           selections: selections.map((s) => ({ selectionId: s.selectionId, odds: s.odds })),
           stake,
           source,
+          ...(freeBet && { freeBetId: freeBet.id }),
+          ...(boost && { boostRedemptionId: boost.redemptionId }),
         },
       });
+      setBoostId('');
+      setPay('REAL');
       onPlaced(bet);
     } catch (e) {
       if (e instanceof ApiError && e.code === ErrorCode.ODDS_CHANGED) {
@@ -144,8 +191,9 @@ export function BetSlip({
       ) : (
         <div className={styles.body}>
           <ul className={styles.picks}>
-            {selections.map((s) => {
+            {selections.map((s, i) => {
               const { teams } = splitMatchLabel(s.matchLabel);
+              const boosted = odds[i] !== quoted[i];
               return (
                 <li key={s.selectionId} className={styles.pick}>
                   <div>
@@ -155,7 +203,10 @@ export function BetSlip({
                       {s.live && <span className={styles.live}> En vivo</span>}
                     </p>
                   </div>
-                  <span className={styles.pickOdds}>{s.odds}</span>
+                  <span className={styles.pickOdds}>
+                    {boosted && <s className={styles.oldOdds}>{s.odds}</s>}
+                    {oddsToString(odds[i]!)}
+                  </span>
                   <button
                     type="button"
                     className={styles.remove}
@@ -183,42 +234,72 @@ export function BetSlip({
             </div>
           )}
 
-          <div className="field">
-            <label htmlFor={stakeId}>Monto</label>
-            <div className={styles.stakeRow}>
-              <span aria-hidden="true" className={styles.currency}>
-                $
-              </span>
-              <input
-                id={stakeId}
-                inputMode="decimal"
-                autoComplete="off"
-                value={stakeInput}
-                onChange={(e) => setStakeInput(e.target.value)}
-                onBlur={() => stake && setStakeInput(stake)}
-                aria-invalid={stake ? undefined : true}
-                aria-describedby={`${stakeId}-hint`}
-              />
-            </div>
-            <span id={`${stakeId}-hint`} className="hint">
-              {limits
-                ? `Entre ${usd(limits.minStake)} y ${usd(limits.maxStake)} por apuesta.`
-                : 'Monto en USD.'}
-            </span>
-            <div className={styles.presets} role="group" aria-label="Montos rápidos">
-              {PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={styles.preset}
-                  aria-pressed={stake === p}
-                  onClick={() => setStakeInput(p)}
-                >
-                  {usd(p).replace('.00', '')}
-                </button>
+          {single && (promotions?.boosts.length ?? 0) > 0 && (
+            <fieldset className={styles.sources}>
+              <legend>Aumento de cuota</legend>
+              <label className={styles.source}>
+                <input type="radio" name="boost" checked={!boost} onChange={() => setBoostId('')} />
+                <span>Sin aumento</span>
+              </label>
+              {promotions!.boosts.map((b) => (
+                <label key={b.redemptionId} className={styles.source}>
+                  <input
+                    type="radio"
+                    name="boost"
+                    checked={boost?.redemptionId === b.redemptionId}
+                    onChange={() => setBoostId(b.redemptionId)}
+                  />
+                  <span>
+                    +{b.percent} %{b.maxBoost && ` (hasta +${b.maxBoost})`}
+                  </span>
+                  <span className={styles.sourceAmount}>{b.code}</span>
+                </label>
               ))}
+            </fieldset>
+          )}
+
+          {freeBet ? (
+            <p className={styles.fixedStake}>
+              Apuesta gratis de <strong>{usd(freeBet.amount)}</strong>: no se descuenta de tu saldo.
+            </p>
+          ) : (
+            <div className="field">
+              <label htmlFor={stakeId}>Monto</label>
+              <div className={styles.stakeRow}>
+                <span aria-hidden="true" className={styles.currency}>
+                  $
+                </span>
+                <input
+                  id={stakeId}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={stakeInput}
+                  onChange={(e) => setStakeInput(e.target.value)}
+                  onBlur={() => stake && setStakeInput(stake)}
+                  aria-invalid={stake ? undefined : true}
+                  aria-describedby={`${stakeId}-hint`}
+                />
+              </div>
+              <span id={`${stakeId}-hint`} className="hint">
+                {limits
+                  ? `Entre ${usd(limits.minStake)} y ${usd(limits.maxStake)} por apuesta.`
+                  : 'Monto en USD.'}
+              </span>
+              <div className={styles.presets} role="group" aria-label="Montos rápidos">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={styles.preset}
+                    aria-pressed={stake === p}
+                    onClick={() => setStakeInput(p)}
+                  >
+                    {usd(p).replace('.00', '')}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <fieldset className={styles.sources}>
             <legend>Pagar con</legend>
@@ -228,8 +309,8 @@ export function BetSlip({
                   type="radio"
                   name="source"
                   value={value}
-                  checked={source === value}
-                  onChange={() => setSource(value)}
+                  checked={pay === value}
+                  onChange={() => setPay(value)}
                 />
                 <span>{value === 'REAL' ? 'Saldo' : 'Bono'}</span>
                 <span className={styles.sourceAmount}>
@@ -237,10 +318,22 @@ export function BetSlip({
                 </span>
               </label>
             ))}
+            {freeBets.map((f) => (
+              <label key={f.id} className={styles.source}>
+                <input
+                  type="radio"
+                  name="source"
+                  checked={pay === `free:${f.id}`}
+                  onChange={() => setPay(`free:${f.id}`)}
+                />
+                <span>Apuesta gratis {usd(f.amount)}</span>
+                <span className={styles.sourceAmount}>vence {dateTime(f.expiresAt)}</span>
+              </label>
+            ))}
           </fieldset>
 
           <div className={styles.payout} aria-live="polite">
-            <span>Si gana, cobras</span>
+            <span>{freeBet ? 'Si gana, recibes en tu bono' : 'Si gana, cobras'}</span>
             <strong>{estimate ? usd(estimate) : '—'}</strong>
           </div>
 
@@ -268,7 +361,9 @@ export function BetSlip({
               ? live
                 ? 'Confirmando apuesta en vivo…'
                 : 'Confirmando…'
-              : `Confirmar apuesta de ${stake ? usd(stake) : '—'}`}
+              : freeBet
+                ? `Confirmar apuesta gratis de ${usd(freeBet.amount)}`
+                : `Confirmar apuesta de ${stake ? usd(stake) : '—'}`}
           </button>
         </div>
       )}

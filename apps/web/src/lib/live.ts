@@ -1,11 +1,12 @@
 import { io, type Socket } from 'socket.io-client';
 import { refreshSession } from './api';
-import type { BetView } from './bets';
+import type { BetView, BonusView } from './bets';
 
 /** Eventos de contracts/realtime.md. */
 export interface LiveEvents {
   'bet.updated': { bet: BetView; version: number };
   'wallet.updated': { real: string; bonus: string; held: string };
+  'bonus.updated': BonusView;
   /** Se reconectó tras una caída: los avisos perdidos se recuperan recargando. */
   resync: undefined;
 }
@@ -47,6 +48,9 @@ export class LiveClient {
     });
     socket.on('wallet.updated', (payload: LiveEvents['wallet.updated']) =>
       this.emit('wallet.updated', payload),
+    );
+    socket.on('bonus.updated', (payload: LiveEvents['bonus.updated']) =>
+      this.emit('bonus.updated', payload),
     );
     socket.on('session.expired', () => void this.renew());
     socket.on('connect_error', (err: Error & { data?: { code?: string } }) => {

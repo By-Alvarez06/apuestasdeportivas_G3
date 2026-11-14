@@ -100,3 +100,38 @@ export function splitMatchLabel(label: string): { competition: string; teams: st
     ? { competition: '', teams: label }
     : { competition: label.slice(0, at), teams: label.slice(at + 3) };
 }
+
+export interface BonusView {
+  id: string;
+  amount: string;
+  wagerRequired: string;
+  wagerProgress: string;
+  expiresAt: string;
+  status: 'ACTIVE' | 'CONVERTED' | 'EXPIRED';
+}
+
+/** GET /promotions. */
+export interface Promotions {
+  bonus: BonusView | null;
+  freeBets: { id: string; amount: string; expiresAt: string }[];
+  boosts: {
+    redemptionId: string;
+    code: string;
+    percent: number;
+    maxBoost: string | null;
+    expiresAt: string;
+  }[];
+  redemptions: {
+    id: string;
+    code: string;
+    type: 'DEPOSIT_BONUS' | 'FREE_BET' | 'ODDS_BOOST';
+    status: 'AWAITING_DEPOSIT' | 'GRANTED' | 'AVAILABLE' | 'USED' | 'EXPIRED';
+    createdAt: string;
+  }[];
+}
+
+export const COUPON_TYPE_LABEL: Record<Promotions['redemptions'][number]['type'], string> = {
+  DEPOSIT_BONUS: 'Bono de depósito',
+  FREE_BET: 'Apuesta gratis',
+  ODDS_BOOST: 'Aumento de cuota',
+};

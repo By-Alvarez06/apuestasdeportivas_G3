@@ -231,8 +231,8 @@ dispositivo y método de pago, y verificar la conversión del bono.
 
 🔖 Commit: `feat(api): cupones, apuestas gratis, aumentos de cuota y rollover de bonos`
 
-- [ ] T060 [P] [US5] Crear la página `/promociones` (canjear código, bono con barra de avance del rollover y vencimiento, apuestas gratis y aumentos disponibles) en `apps/web/src/app/promociones/page.tsx`, y en `BetSlip` la opción de usar una apuesta gratis o un aumento disponible
-- [ ] T061 [P] [US5] Crear la página `/operador/cupones` (crear cupón con validación, lista con canjes, pausar y reanudar) en `apps/web/src/app/operador/cupones/page.tsx`
+- [X] T060 [P] [US5] Crear la página `/promociones` (canjear código, bono con barra de avance del rollover y vencimiento, apuestas gratis y aumentos disponibles) en `apps/web/src/app/promociones/page.tsx`, y en `BetSlip` la opción de usar una apuesta gratis o un aumento disponible
+- [X] T061 [P] [US5] Crear la página `/operador/cupones` (crear cupón con validación, lista con canjes, pausar y reanudar) en `apps/web/src/app/operador/cupones/page.tsx`
 
 🔖 Commit: `feat(web): promociones y gestión de cupones`
 

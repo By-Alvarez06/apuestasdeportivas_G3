@@ -163,3 +163,36 @@ test('una apuesta sobre un partido suspendido se ve en espera con su plazo', asy
     },
   });
 });
+
+test('canjea una apuesta gratis y la usa sin tocar su saldo', async ({ page }) => {
+  const code = `GRATIS${Date.now() % 100_000_000}`;
+  const created = await operator.post('/api/operator/coupons', {
+    data: {
+      code,
+      type: 'FREE_BET',
+      amount: '5.00',
+      startsAt: new Date(Date.now() - 60_000).toISOString(),
+      endsAt: new Date(Date.now() + 7 * 24 * 3_600_000).toISOString(),
+      totalLimit: 10,
+    },
+  });
+  expect(created.status()).toBe(201);
+
+  await newBettorWith25(page);
+  await page.goto('/promociones');
+  await page.getByLabel('Código de promoción').fill(code.toLowerCase());
+  await page.getByRole('button', { name: 'Canjear código' }).click();
+  await expect(page.getByText(/Tu apuesta gratis ya está disponible/)).toBeVisible();
+  await expect(page.getByText('Apuesta gratis de $5.00')).toBeVisible();
+
+  await page.goto('/apuestas');
+  await page.getByRole('button', { name: /Orense\s*2\.00/ }).click();
+  const slip = page.getByRole('complementary', { name: 'Tu boleto' });
+  await slip.getByLabel(/Apuesta gratis \$5\.00/).check();
+  await expect(slip.getByText('Si gana, recibes en tu bono')).toBeVisible();
+  await expect(slip.getByText('$5.00', { exact: true }).last()).toBeVisible();
+  await slip.getByRole('button', { name: 'Confirmar apuesta gratis de $5.00' }).click();
+  await expect(page.getByText(/Apuesta aceptada: \$5\.00 a cuota 2\.00/)).toBeVisible();
+  // No se descontó nada del saldo.
+  await expect(page.getByRole('link', { name: /Saldo disponible/ })).toHaveText(/\$25\.00/);
+});

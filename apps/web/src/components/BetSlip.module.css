@@ -228,3 +228,16 @@
 .confirm {
   width: 100%;
 }
+
+.oldOdds {
+  margin-right: 0.375rem;
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.fixedStake {
+  padding: 0.75rem;
+  border: 1px dashed var(--pitch);
+  border-radius: var(--radius-field);
+}
