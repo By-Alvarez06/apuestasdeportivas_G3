@@ -172,7 +172,7 @@ liquidación anticipada al perder una selección.
 
 🔖 Commit: `feat(api): apuestas combinadas`
 
-- [ ] T046 [US3] Extender `BetSlip` a varias selecciones (lista, quitar selección, cuota total, aviso si dos son del mismo partido, reconfirmación de cuotas cambiadas en bloque) en `apps/web/src/components/BetSlip.tsx` y `apps/web/src/app/apuestas/page.tsx`
+- [X] T046 [US3] Extender `BetSlip` a varias selecciones (lista, quitar selección, cuota total, aviso si dos son del mismo partido, reconfirmación de cuotas cambiadas en bloque) en `apps/web/src/components/BetSlip.tsx` y `apps/web/src/app/apuestas/page.tsx`
 
 🔖 Commit: `feat(web): boleto de apuesta combinada`
 

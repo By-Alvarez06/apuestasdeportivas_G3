@@ -26,6 +26,7 @@ interface Props {
   balances: SlipBalances | null;
   limits: BettingLimits | null;
   onRemove: (selectionId: string) => void;
+  onClear: () => void;
   /** La API informó cuotas nuevas: el boleto se actualiza para que el apostador las revise. */
   onOddsChanged: (quotes: { selectionId: string; odds: string }[]) => void;
   onPlaced: (bet: BetView) => void;
@@ -57,6 +58,7 @@ export function BetSlip({
   balances,
   limits,
   onRemove,
+  onClear,
   onOddsChanged,
   onPlaced,
 }: Props) {
@@ -129,11 +131,16 @@ export function BetSlip({
     <aside className={styles.slip} aria-labelledby={headingId}>
       <header className={styles.head}>
         <h2 id={headingId}>Tu boleto</h2>
-        {selections.length > 1 && <span className={styles.kind}>Combinada</span>}
+        {selections.length > 1 && (
+          <span className={styles.kind}>Combinada de {selections.length}</span>
+        )}
       </header>
 
       {selections.length === 0 ? (
-        <p className={styles.empty}>Toca una cuota para añadirla a tu boleto.</p>
+        <p className={styles.empty}>
+          Toca una cuota para añadirla a tu boleto. Con cuotas de varios partidos armas una
+          combinada.
+        </p>
       ) : (
         <div className={styles.body}>
           <ul className={styles.picks}>
@@ -166,9 +173,14 @@ export function BetSlip({
           {warning && <Notice tone="warning">{warning}</Notice>}
 
           {selections.length > 1 && (
-            <p className={styles.total}>
-              Cuota total <strong>{oddsToString(displayTotalOdds(odds))}</strong>
-            </p>
+            <div className={styles.total}>
+              <span>
+                Cuota total <strong>{oddsToString(displayTotalOdds(odds))}</strong>
+              </span>
+              <button type="button" className="button-quiet" onClick={onClear}>
+                Vaciar boleto
+              </button>
+            </div>
           )}
 
           <div className="field">

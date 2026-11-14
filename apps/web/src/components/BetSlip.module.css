@@ -95,8 +95,15 @@
 
 .total {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 0.5rem;
   color: var(--ink-soft);
+}
+
+.total strong {
+  margin-left: 0.25rem;
 }
 
 .total strong {

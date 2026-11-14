@@ -1,5 +1,5 @@
 import type { Server } from 'node:http';
-import { type APIRequestContext, expect, request, test } from '@playwright/test';
+import { type APIRequestContext, expect, type Page, request, test } from '@playwright/test';
 import { linkFromLastMail } from './mailpit';
 import { startPayphoneMock } from './payphone-mock';
 
@@ -35,7 +35,8 @@ test.afterAll(async () => {
   await operator.dispose();
 });
 
-test('el apostador ve su apuesta ganada y su saldo nuevo sin recargar', async ({ page }) => {
+/** Registra, verifica, inicia sesión y deposita 25.00 con el Payphone simulado. */
+async function newBettorWith25(page: Page): Promise<void> {
   const email = `bet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   const password = 'clave-e2e-segura-72';
 
@@ -59,6 +60,10 @@ test('el apostador ve su apuesta ganada y su saldo nuevo sin recargar', async ({
   await page.getByLabel('Monto en USD').fill('25');
   await page.getByRole('button', { name: 'Depositar $25.00' }).click();
   await expect(page.getByText('Depósito acreditado. Ya está en tu saldo.')).toBeVisible();
+}
+
+test('el apostador ve su apuesta ganada y su saldo nuevo sin recargar', async ({ page }) => {
+  await newBettorWith25(page);
 
   // Apostar 10.00 a Barcelona SC (2.10).
   await page.goto('/apuestas');
@@ -93,4 +98,30 @@ test('el apostador ve su apuesta ganada y su saldo nuevo sin recargar', async ({
     .info()
     .annotations.push({ type: 'latencia resultado → pantalla', description: `${latencyMs} ms` });
   expect(latencyMs).toBeLessThan(5000);
+});
+
+test('arma una combinada: suma partidos, reemplaza el del mismo partido y la confirma', async ({
+  page,
+}) => {
+  await newBettorWith25(page);
+  await page.goto('/apuestas');
+
+  await page.getByRole('button', { name: /Orense\s*2\.00/ }).click();
+  await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
+  const slip = page.getByRole('complementary', { name: 'Tu boleto' });
+  await expect(slip.getByText('Combinada de 2')).toBeVisible();
+  await expect(slip.getByText('Cuota total')).toContainText('3.60');
+
+  // Otra cuota del mismo partido reemplaza a la anterior.
+  await page.getByRole('button', { name: /Delfín\s*3\.60/ }).click();
+  await expect(page.getByText(/Cambiamos Orense por Delfín/)).toBeVisible();
+  await expect(slip.getByText('Cuota total')).toContainText('6.48');
+
+  await slip.getByRole('button', { name: 'Confirmar apuesta de $10.00' }).click();
+  await expect(
+    page.getByText(/Apuesta aceptada: \$10\.00 a cuota 6\.48\. Si gana cobras \$64\.80/),
+  ).toBeVisible();
+
+  await page.goto('/mis-apuestas');
+  await expect(page.getByText('Combinada de 2')).toBeVisible();
 });

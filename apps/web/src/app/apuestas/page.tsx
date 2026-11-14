@@ -39,6 +39,7 @@ function Betting() {
   const [limits, setLimits] = useState<BettingLimits | null>(null);
   const [slip, setSlip] = useState<SlipSelection[]>([]);
   const [placed, setPlaced] = useState<BetView | null>(null);
+  const [slipNote, setSlipNote] = useState('');
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -62,11 +63,31 @@ function Betting() {
   useLive('wallet.updated', (w) => setBalances({ real: w.real, bonus: w.bonus }));
   useLive('resync', () => void load());
 
+  /**
+   * Tocar una cuota la agrega al boleto (combinada si hay varias) o la quita si ya estaba. Otra
+   * cuota del mismo partido reemplaza a la anterior: una combinada no admite dos del mismo partido.
+   */
   function toggle(selection: SlipSelection) {
     setPlaced(null);
-    setSlip((current) =>
-      current.some((s) => s.selectionId === selection.selectionId) ? [] : [selection],
-    );
+    setSlipNote('');
+    if (slip.some((s) => s.selectionId === selection.selectionId)) {
+      setSlip(slip.filter((s) => s.selectionId !== selection.selectionId));
+      return;
+    }
+    const sameMatch = slip.find((s) => s.matchId === selection.matchId);
+    if (sameMatch) {
+      setSlipNote(
+        `Cambiamos ${sameMatch.selectionLabel} por ${selection.selectionLabel}: una combinada no admite dos selecciones del mismo partido.`,
+      );
+      setSlip(slip.map((s) => (s.matchId === selection.matchId ? selection : s)));
+      return;
+    }
+    const max = limits?.comboMaxSelections ?? Infinity;
+    if (slip.length >= max) {
+      setSlipNote(`Una combinada admite como máximo ${max} selecciones.`);
+      return;
+    }
+    setSlip([...slip, selection]);
   }
 
   function onOddsChanged(quotes: { selectionId: string; odds: string }[]) {
@@ -122,11 +143,19 @@ function Betting() {
             {usd(placed.potentialPayout)}. <Link href="/mis-apuestas">Ver en Mis apuestas</Link>
           </Notice>
         )}
+        {slipNote && <Notice tone="warning">{slipNote}</Notice>}
         <BetSlip
           selections={slip}
           balances={balances}
           limits={limits}
-          onRemove={() => setSlip([])}
+          onRemove={(id) => {
+            setSlipNote('');
+            setSlip((current) => current.filter((s) => s.selectionId !== id));
+          }}
+          onClear={() => {
+            setSlipNote('');
+            setSlip([]);
+          }}
           onOddsChanged={onOddsChanged}
           onPlaced={onPlaced}
         />
