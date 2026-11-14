@@ -1,0 +1,120 @@
+{
+  "$comment": "Catálogo simulado de la spec 4 hasta que exista la spec 3. startsInMinutes es relativo al arranque (o al último reset). Cuotas en centésimas.",
+  "matches": [
+    {
+      "matchId": "m1",
+      "label": "Liga Pro · Barcelona SC vs Emelec",
+      "startsInMinutes": 120,
+      "status": "SCHEDULED",
+      "markets": [
+        {
+          "marketId": "m1-1x2",
+          "label": "Resultado final",
+          "status": "OPEN",
+          "live": false,
+          "selections": [
+            { "selectionId": "m1-1x2-home", "label": "Barcelona SC", "odds": 210 },
+            { "selectionId": "m1-1x2-draw", "label": "Empate", "odds": 320 },
+            { "selectionId": "m1-1x2-away", "label": "Emelec", "odds": 340 }
+          ]
+        },
+        {
+          "marketId": "m1-goals",
+          "label": "Total de goles: más/menos de 2.5",
+          "status": "OPEN",
+          "live": false,
+          "selections": [
+            { "selectionId": "m1-goals-over", "label": "Más de 2.5", "odds": 185 },
+            { "selectionId": "m1-goals-under", "label": "Menos de 2.5", "odds": 195 }
+          ]
+        }
+      ]
+    },
+    {
+      "matchId": "m2",
+      "label": "Liga Pro · LDU Quito vs Independiente del Valle",
+      "startsInMinutes": -30,
+      "status": "LIVE",
+      "markets": [
+        {
+          "marketId": "m2-1x2",
+          "label": "Resultado final (en vivo)",
+          "status": "OPEN",
+          "live": true,
+          "selections": [
+            { "selectionId": "m2-1x2-home", "label": "LDU Quito", "odds": 175 },
+            { "selectionId": "m2-1x2-draw", "label": "Empate", "odds": 350 },
+            { "selectionId": "m2-1x2-away", "label": "Independiente del Valle", "odds": 450 }
+          ]
+        },
+        {
+          "marketId": "m2-first-goal",
+          "label": "Equipo que marca el primer gol",
+          "status": "CLOSED",
+          "live": false,
+          "selections": [
+            { "selectionId": "m2-first-goal-home", "label": "LDU Quito", "odds": 160 },
+            { "selectionId": "m2-first-goal-away", "label": "Independiente del Valle", "odds": 230 }
+          ]
+        }
+      ]
+    },
+    {
+      "matchId": "m3",
+      "label": "Liga Pro · Aucas vs Deportivo Cuenca",
+      "startsInMinutes": -10,
+      "status": "SCHEDULED",
+      "markets": [
+        {
+          "marketId": "m3-1x2",
+          "label": "Resultado final",
+          "status": "OPEN",
+          "live": false,
+          "selections": [
+            { "selectionId": "m3-1x2-home", "label": "Aucas", "odds": 190 },
+            { "selectionId": "m3-1x2-draw", "label": "Empate", "odds": 310 },
+            { "selectionId": "m3-1x2-away", "label": "Deportivo Cuenca", "odds": 400 }
+          ]
+        }
+      ]
+    },
+    {
+      "matchId": "m4",
+      "label": "Copa Ecuador · Orense vs Delfín",
+      "startsInMinutes": 1560,
+      "status": "SCHEDULED",
+      "markets": [
+        {
+          "marketId": "m4-1x2",
+          "label": "Resultado final",
+          "status": "OPEN",
+          "live": false,
+          "selections": [
+            { "selectionId": "m4-1x2-home", "label": "Orense", "odds": 200 },
+            { "selectionId": "m4-1x2-draw", "label": "Empate", "odds": 300 },
+            { "selectionId": "m4-1x2-away", "label": "Delfín", "odds": 360 }
+          ]
+        }
+      ]
+    },
+    {
+      "matchId": "m5",
+      "label": "Copa Ecuador · Macará vs Mushuc Runa",
+      "startsInMinutes": 1620,
+      "status": "SCHEDULED",
+      "markets": [
+        {
+          "marketId": "m5-1x2",
+          "label": "Resultado final",
+          "status": "OPEN",
+          "live": false,
+          "selections": [
+            { "selectionId": "m5-1x2-home", "label": "Macará", "odds": 180 },
+            { "selectionId": "m5-1x2-draw", "label": "Empate", "odds": 290 },
+            { "selectionId": "m5-1x2-away", "label": "Mushuc Runa", "odds": 420 }
+          ]
+        }
+      ]
+    }
+  ]
+}

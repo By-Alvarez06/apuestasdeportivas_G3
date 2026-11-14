@@ -4,11 +4,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { CatalogModule } from './catalog/catalog.module';
 import { AccessModule } from './common/auth/access.module';
 import { DepositsModule } from './deposits/deposits.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QueuesModule } from './queues/queues.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
@@ -34,6 +36,9 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     DepositsModule,
     WithdrawalsModule,
     UsersModule,
+    // Spec 4
+    QueuesModule,
+    CatalogModule,
     HealthModule,
   ],
 })

@@ -14,6 +14,7 @@ import { Role, UserStatus } from '../src/generated/prisma/enums';
 import { MailService } from '../src/mail/mail.service';
 import { createPrismaClient } from '../src/prisma/prisma.service';
 import { ALL_QUEUES } from '../src/queues/queue-names';
+import { redisConnection } from '../src/queues/redis-connection';
 import { ensureSystemAccounts } from '../src/wallet/system-accounts';
 import { newUserWallet } from '../src/wallet/user-wallet';
 import {
@@ -28,7 +29,7 @@ import {
  * Llamarla en `beforeEach` junto con `resetDatabase` en las pruebas que encolan eventos.
  */
 export async function drainQueues(): Promise<void> {
-  const connection = { url: process.env.REDIS_URL as string };
+  const connection = redisConnection(process.env.REDIS_URL as string);
   const prefix = process.env.BULLMQ_PREFIX as string;
   await Promise.all(
     ALL_QUEUES.map(async (name) => {
