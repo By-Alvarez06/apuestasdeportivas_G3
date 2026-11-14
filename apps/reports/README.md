@@ -6,6 +6,9 @@ y después llama a este servicio con `REPORTS_SERVICE_TOKEN`.
 
 ## Configuración local
 
+Durante el desarrollo el servicio carga las variables del `.env` situado en la raíz del monorepo;
+en despliegues se leen las variables definidas por el entorno.
+
 1. Define `REPORTS_SERVICE_TOKEN` con un secreto aleatorio largo, igual en el servicio de API y en
    este servicio.
 2. Configura `REPORTS_DATABASE_URL` con una cuenta PostgreSQL que solo tenga permiso `SELECT` sobre

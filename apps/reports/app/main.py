@@ -5,10 +5,12 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from io import BytesIO, StringIO
+from pathlib import Path
 from typing import Annotated
 from uuid import UUID
 
 import asyncpg
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
@@ -16,6 +18,8 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 APP_VERSION = "0.1.0"
 MAX_ROWS = 1000
