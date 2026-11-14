@@ -28,7 +28,8 @@ pnpm --filter @apuestas/web test:e2e           # Playwright contra la pila local
 Notas que no se deducen del código:
 
 - Las pruebas de integración usan dobles sin red para correo, Turnstile, HIBP y Payphone (`apps/api/test/fakes.ts`); la E2E de depósito levanta un Payphone simulado (`apps/web/e2e/payphone-mock.ts`).
-- `@nestjs/config`, `@nestjs/jwt`, `@nestjs/schedule` y `otplib` están fijados en versiones CommonJS: las siguientes son solo ESM y Jest no las carga.
+- `@nestjs/config`, `@nestjs/jwt`, `@nestjs/schedule`, `@nestjs/bullmq` (^11) y `otplib` están fijados en versiones CommonJS: las siguientes son solo ESM y Jest no las carga.
+- Las pruebas de integración necesitan Redis además de PostgreSQL; cada corrida usa su propio prefijo de BullMQ (`test-<pid>`) y `drainQueues()` de `apps/api/test/setup.ts` vacía las colas.
 - Todo movimiento de dinero pasa por `WalletService` (`apps/api/src/wallet`, contrato en `specs/002-cuentas-billetera/contracts/wallet-service.md`); ningún otro módulo escribe en las tablas del libro contable.
 
 ## Arquitectura prevista

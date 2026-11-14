@@ -13,11 +13,11 @@ const nextConfig: NextConfig = {
   // La web habla con la API por /api/* en su mismo dominio: las cookies de sesión quedan de primer
   // nivel (SameSite=Lax funciona aunque la API viva en otro dominio, p. ej. Render).
   async rewrites() {
+    const api = process.env.API_URL ?? 'http://localhost:3001';
     return [
-      {
-        source: '/api/:path*',
-        destination: `${process.env.API_URL ?? 'http://localhost:3001'}/:path*`,
-      },
+      { source: '/api/:path*', destination: `${api}/:path*` },
+      // Socket.IO (resultados en vivo): mismo dominio para que viaje la cookie de sesión.
+      { source: '/socket.io/:path*', destination: `${api}/socket.io/:path*` },
     ];
   },
 };

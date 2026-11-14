@@ -13,3 +13,7 @@ process.env.TOTP_ENC_KEY ??= Buffer.alloc(32, 7).toString('base64');
 process.env.THROTTLE_LIMIT = '10000';
 // Las pruebas llaman a la API directo, sin el proxy /api de la web.
 process.env.PUBLIC_API_PREFIX = '';
+process.env.REDIS_URL ??= 'redis://localhost:6379';
+// Prefijo de BullMQ propio de esta corrida: las pruebas no ven trabajos de la app de desarrollo.
+process.env.BULLMQ_PREFIX = `test-${process.pid}`;
+process.env.CATALOG_MODE ??= 'simulated';

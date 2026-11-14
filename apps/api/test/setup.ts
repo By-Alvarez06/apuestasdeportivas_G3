@@ -1,4 +1,5 @@
 import type { Type } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import type { Response } from 'supertest';
@@ -12,6 +13,7 @@ import type { PrismaClient } from '../src/generated/prisma/client';
 import { Role, UserStatus } from '../src/generated/prisma/enums';
 import { MailService } from '../src/mail/mail.service';
 import { createPrismaClient } from '../src/prisma/prisma.service';
+import { ALL_QUEUES } from '../src/queues/queue-names';
 import { ensureSystemAccounts } from '../src/wallet/system-accounts';
 import { newUserWallet } from '../src/wallet/user-wallet';
 import {
@@ -20,6 +22,25 @@ import {
   FakeMailService,
   FakePayphoneClient,
 } from './fakes';
+
+/**
+ * Vacía las colas BullMQ de esta corrida (trabajos pendientes, diferidos, fallidos y completados).
+ * Llamarla en `beforeEach` junto con `resetDatabase` en las pruebas que encolan eventos.
+ */
+export async function drainQueues(): Promise<void> {
+  const connection = { url: process.env.REDIS_URL as string };
+  const prefix = process.env.BULLMQ_PREFIX as string;
+  await Promise.all(
+    ALL_QUEUES.map(async (name) => {
+      const queue = new Queue(name, { connection, prefix });
+      try {
+        await queue.obliterate({ force: true });
+      } finally {
+        await queue.close();
+      }
+    }),
+  );
+}
 
 export function createTestPrisma(): PrismaClient {
   return createPrismaClient(process.env.DATABASE_URL as string);

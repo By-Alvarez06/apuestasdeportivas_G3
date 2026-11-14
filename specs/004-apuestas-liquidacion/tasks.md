@@ -35,11 +35,11 @@ incluye pruebas de concurrencia, idempotencia o abuso según corresponda.
 
 **Purpose**: dependencias, entorno local y CI listos para colas, WebSocket y pruebas con Redis.
 
-- [ ] T001 Añadir a `apps/api/package.json` `@nestjs/bullmq`, `bullmq`, `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io` y (dev) `socket.io-client`; comprobar que Jest las carga como CommonJS (si alguna es solo ESM, fijar la última versión CJS y anotarlo en `CLAUDE.md`)
-- [ ] T002 [P] Añadir `socket.io-client` a `apps/web/package.json` y el proxy de `/socket.io/:path*` hacia `API_URL` en `apps/web/next.config.ts`
-- [ ] T003 [P] Añadir `CATALOG_MODE=simulated` y `BULLMQ_PREFIX=apuestas` en `.env.example`
-- [ ] T004 [P] Añadir servicio `redis:7-alpine` y `REDIS_URL` al job `test-api` en `.github/workflows/ci.yml`
-- [ ] T005 Extender `apps/api/test/setup.ts` y `apps/api/test/env.ts`: prefijo BullMQ único por ejecución (`test-<pid>`), helper `drainQueues(app)` que vacía las colas entre pruebas y cierre de conexiones Redis en `afterAll`
+- [X] T001 Añadir a `apps/api/package.json` `@nestjs/bullmq`, `bullmq`, `@nestjs/websockets`, `@nestjs/platform-socket.io`, `socket.io` y (dev) `socket.io-client`; comprobar que Jest las carga como CommonJS (si alguna es solo ESM, fijar la última versión CJS y anotarlo en `CLAUDE.md`)
+- [X] T002 [P] Añadir `socket.io-client` a `apps/web/package.json` y el proxy de `/socket.io/:path*` hacia `API_URL` en `apps/web/next.config.ts`
+- [X] T003 [P] Añadir `CATALOG_MODE=simulated` y `BULLMQ_PREFIX=apuestas` en `.env.example`
+- [X] T004 [P] Añadir servicio `redis:7-alpine` y `REDIS_URL` al job `test-api` en `.github/workflows/ci.yml`
+- [X] T005 Extender `apps/api/test/setup.ts` y `apps/api/test/env.ts`: prefijo BullMQ único por ejecución (`test-<pid>`), helper `drainQueues(app)` que vacía las colas entre pruebas y cierre de conexiones Redis en `afterAll`
 
 🔖 Commit: `chore(api): preparar colas, WebSocket y CI para la spec 4`
 
