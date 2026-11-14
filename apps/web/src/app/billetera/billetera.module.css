@@ -1,0 +1,155 @@
+/* Marcador de saldos: la cifra grande es lo único que levanta la voz en la pantalla. */
+.scoreboard {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  color: var(--chalk);
+  background: var(--pitch);
+  border-radius: 10px;
+}
+
+.main {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.label {
+  color: color-mix(in srgb, var(--chalk) 80%, transparent);
+}
+
+.big {
+  font-family: var(--font-display);
+  font-size: clamp(var(--step-4), 12vw, 5.5rem);
+  font-weight: 700;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2rem;
+}
+
+.side div {
+  display: grid;
+}
+
+.side dt {
+  font-size: var(--step--1);
+  color: color-mix(in srgb, var(--chalk) 80%, transparent);
+}
+
+.side dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.actions :global(.button) {
+  color: var(--pitch-deep);
+  background: var(--card-yellow);
+}
+
+.actions :global(.button):hover {
+  color: var(--pitch-deep);
+  background: color-mix(in srgb, var(--card-yellow) 85%, white);
+}
+
+.secondary {
+  color: var(--chalk);
+  font-weight: 600;
+}
+
+.secondary:hover {
+  color: var(--chalk);
+}
+
+.listHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.select {
+  font: inherit;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.what {
+  display: grid;
+}
+
+.what small {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.amount {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.amount[data-sign='in'] {
+  color: var(--pitch);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pager button:disabled {
+  color: var(--ink-soft);
+  text-decoration: none;
+  cursor: default;
+}
+
+@media (min-width: 700px) {
+  .scoreboard {
+    grid-template-columns: 1fr auto;
+    align-items: flex-end;
+    padding: 2rem;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+}

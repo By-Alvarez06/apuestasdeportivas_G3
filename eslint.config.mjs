@@ -11,6 +11,7 @@ export default defineConfig([
       "**/.turbo/**",
       "**/coverage/**",
       "apps/reports/**",
+      "apps/api/src/generated/**",
     ],
   },
   js.configs.recommended,
@@ -23,6 +24,14 @@ export default defineConfig([
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/consistent-type-imports": "error",
+    },
+  },
+  {
+    // Nest inyecta dependencias por los tipos del constructor: con esto la regla anterior no las
+    // convierte en `import type` (que rompería la inyección).
+    files: ["apps/api/**/*.ts"],
+    languageOptions: {
+      parserOptions: { emitDecoratorMetadata: true, experimentalDecorators: true },
     },
   },
 ]);

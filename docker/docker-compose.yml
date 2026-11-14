@@ -11,6 +11,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-apuestas_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Solo corre con un volumen vacío; si ya existía, usar `pnpm db:reset`.
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-apuestas}"]
       interval: 5s
@@ -31,6 +33,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Bandeja SMTP de desarrollo: los correos de la app se ven en http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.33
+    container_name: apuestas-mailpit
+    restart: unless-stopped
+    ports:
+      - "${SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
 
 volumes:
   postgres_data:

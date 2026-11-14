@@ -1,0 +1,35 @@
+.page {
+  width: 100%;
+  max-width: 32rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.qr {
+  width: 200px;
+  height: 200px;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.secret {
+  word-break: break-all;
+}
+
+.codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1.5rem;
+  padding: 1rem 1.25rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.codes code {
+  font-size: var(--step-1);
+  font-variant-numeric: tabular-nums;
+}
