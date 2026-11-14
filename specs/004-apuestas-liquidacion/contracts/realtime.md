@@ -10,14 +10,15 @@ proxy de Next.js; en producción, al dominio de la API con `withCredentials: tru
   `connect_error` `{ code: "UNAUTHENTICATED" }`.
 - El servidor une el socket a la sala `user:{userId}`. El cliente no puede unirse a otras salas: no
   existe ningún evento de suscripción.
-- Al expirar el token de acceso (15 min), el servidor desconecta con `TOKEN_EXPIRED`; el cliente
-  renueva con `POST /auth/refresh` y reconecta.
+- Si el handshake trae `Origin`, debe ser `WEB_URL`; si no, se rechaza igual que sin sesión.
+- Al expirar el token de acceso (15 min), el servidor emite `session.expired`
+  `{ code: "TOKEN_EXPIRED" }` y desconecta; el cliente renueva con `POST /auth/refresh` y reconecta.
 
 ## Eventos servidor → cliente
 
 | Evento | Payload | Cuándo |
 |--------|---------|--------|
-| `bet.updated` | `{ betId, status, payout: Money, settledAt, selections: [{ id, status }], version }` | tras el commit de cualquier liquidación, anulación, reembolso o re-liquidación de una apuesta del usuario |
+| `bet.updated` | `{ bet: BetView, version }` (`BetView` de http-api.md) | tras el commit de cualquier liquidación, anulación, reembolso o re-liquidación de una apuesta del usuario, o del resultado de una selección de una combinada aún abierta |
 | `wallet.updated` | `{ real: Money, bonus: Money, held: Money }` | tras cualquier movimiento hecho por la spec 4 en la billetera del usuario |
 | `bonus.updated` | `{ bonusId, status, wagerProgress: Money, wagerRequired: Money }` | avance, conversión o caducidad del bono |
 

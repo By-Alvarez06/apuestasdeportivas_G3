@@ -12,6 +12,8 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QueuesModule } from './queues/queues.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { SettlementModule } from './settlement/settlement.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
@@ -41,6 +43,8 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     QueuesModule,
     CatalogModule,
     BettingModule,
+    RealtimeModule,
+    SettlementModule,
     HealthModule,
   ],
 })
