@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { MatchesModule } from './matches/matches.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
 import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 import { WithdrawalsModule } from './withdrawals/withdrawals.module';
@@ -36,6 +37,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     WithdrawalsModule,
     UsersModule,
     MatchesModule,
+    ReportsModule,
     HealthModule,
   ],
 })
