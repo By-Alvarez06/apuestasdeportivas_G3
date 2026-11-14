@@ -39,13 +39,18 @@ export function assertMatchTransition(
 
   if (terminalStatuses.has(current)) {
     if (role !== Role.ADMIN || !reason?.trim()) {
-      throw new MatchRuleError('Corregir un estado terminal requiere administrador y un motivo.');
+      throw new MatchRuleError(
+        'Cambiar o corregir un estado terminal requiere administrador y un motivo.',
+      );
     }
     return;
   }
 
   if (!transitions[current].includes(next)) {
     throw new MatchRuleError('La transición de estado del partido no está permitida.');
+  }
+  if (terminalStatuses.has(next) && (role !== Role.ADMIN || !reason?.trim())) {
+    throw new MatchRuleError('Cambiar a un estado terminal requiere administrador y un motivo.');
   }
 }
 

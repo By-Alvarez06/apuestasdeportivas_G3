@@ -3,11 +3,11 @@
 - [ ] T001 Confirmar contratos, alcance, estados, permisos, mercados, presupuesto y reportes en la
   especificación.
 - [x] T002 Escribir pruebas unitarias de transiciones de partido y validación de marcador.
-- [ ] T003 Escribir pruebas API de autorización por rol, gestión manual, auditoría e historial de
+- [x] T003 Escribir pruebas API de autorización por rol, gestión manual, auditoría e historial de
   cuotas.
-- [ ] T004 Diseñar entidades e índices Prisma para competiciones, equipos, partidos, mercados,
+- [x] T004 Diseñar entidades e índices Prisma para competiciones, equipos, partidos, mercados,
   selecciones, cuotas y presupuesto diario.
-- [ ] T005 Implementar migración y módulo NestJS con cartelera/detalle, filtros y operaciones de
+- [x] T005 Implementar migración y módulo NestJS con cartelera/detalle, filtros y operaciones de
   operador.
 - [ ] T006 Escribir pruebas de reserva concurrente, presupuesto agotado, timeout, idempotencia,
   prioridad de cuotas manuales y respuestas del proveedor.

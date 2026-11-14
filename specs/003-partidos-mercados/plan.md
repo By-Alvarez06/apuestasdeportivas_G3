@@ -41,9 +41,10 @@ para permisos y comportamiento; la clave de API-Football no se usa en pruebas ni
 
 1. `docs(spec-3): define matches markets and reports scope` — especificación, plan, tareas y
    catálogo.
-2. `test(api): cover match state and operator rules` — pruebas del dominio, transiciones, roles,
-   historial y auditoría.
-3. `feat(api): add match and market management` — modelos, migración, servicios y endpoints.
+2. `feat(api): validate match state transitions` — reglas y pruebas unitarias de estados y
+   marcador.
+3. `feat(api): add match and market management` — modelos, migraciones, endpoints, auditoría y
+   pruebas de integración.
 4. `test(api): cover football budget and sync behavior` — pruebas de presupuesto, concurrencia,
    adaptabilidad e idempotencia con proveedor simulado.
 5. `feat(api): sync fixtures with budgeted worker` — cliente y worker BullMQ con límites

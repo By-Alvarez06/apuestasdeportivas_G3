@@ -23,8 +23,8 @@
 | Consultar partidos y mercados publicados | Sí | Sí | Sí |
 | Crear y editar competiciones, partidos y mercados | No | Sí | Sí |
 | Suspender/reabrir mercados y editar cuotas manuales | No | Sí | Sí |
-| Aplicar transiciones ordinarias permitidas al partido | No | Sí | Sí |
-| Corregir/reabrir partido terminado o cancelado | No | No | Sí, con motivo |
+| Aplicar transiciones no terminales permitidas al partido | No | Sí | Sí |
+| Finalizar/cancelar o corregir/reabrir un partido terminal | No | No | Sí, con motivo |
 | Consultar dashboard y exportar reportes | No | Sí | Sí |
 | Cambiar presupuesto, clave o configuración del proveedor | No | No | Solo entorno/operación, nunca UI |
 
@@ -50,11 +50,11 @@ Transiciones ordinarias:
 | FINISHED | Ninguno |
 | CANCELLED | Ninguno |
 
-`FINISHED` requiere marcador final no negativo. Reabrir o corregir un partido terminado/cancelado
-es una operación exclusiva de `ADMIN`, exige motivo y queda auditada. Una transición rechazada no
-modifica ni el estado ni el marcador. Un partido aplazado que se reprograme conserva su identidad
-y mercados; los mercados no se abren automáticamente. La liquidación de apuestas pertenece a
-spec 4 y no se implementa en esta feature.
+`FINISHED` requiere marcador final no negativo. Entrar a `FINISHED` o `CANCELLED`, así como corregir
+o reabrir un partido terminado/cancelado, es exclusivo de `ADMIN`, exige motivo y queda auditado.
+Una transición rechazada no modifica ni el estado ni el marcador. Un partido aplazado que se
+reprograme conserva su identidad y mercados; los mercados no se abren automáticamente. La
+liquidación de apuestas pertenece a spec 4 y no se implementa en esta feature.
 
 Los mercados admiten `OPEN`, `SUSPENDED` y `CLOSED`. Solo `OPEN` publica cuotas apostables. Una
 suspensión/cierre de partido suspende sus mercados inmediatamente; reanudar un partido no los
@@ -69,8 +69,26 @@ Tipos y selecciones estables:
 | Total de goles | Línea decimal positiva (p. ej., 2.5) | `OVER`, `UNDER` |
 | Ambos equipos marcan | Ninguno | `YES`, `NO` |
 
-Cada selección tiene una única cuota decimal positiva vigente por fuente. Para total de goles la
-línea identifica mercados distintos; los otros tipos no aceptan línea.
+Cada selección tiene una única cuota decimal mayor que `1.000` vigente por fuente. Para total de
+goles la línea identifica mercados distintos; los otros tipos no aceptan línea.
+
+## Contrato HTTP
+
+| Método | Ruta | Acceso | Propósito |
+|---|---|---|---|
+| GET | `/matches` | Público | Cartelera paginada; filtros `from`, `to`, `competitionId`, `status`, `page`, `pageSize` |
+| GET | `/matches/:id` | Público | Partido y mercados abiertos; cuota manual preferida |
+| GET/POST | `/operator/competitions` | OPERATOR/ADMIN | Listar y crear competiciones |
+| GET/POST | `/operator/matches` | OPERATOR/ADMIN | Cartelera operativa y creación manual |
+| GET/PATCH | `/operator/matches/:id` | OPERATOR/ADMIN | Detalle completo y edición de partido |
+| PATCH | `/operator/matches/:id/status` | OPERATOR/ADMIN | Aplicar transición validada; terminal solo ADMIN con motivo |
+| POST | `/operator/matches/:id/markets` | OPERATOR/ADMIN | Crear mercado con todas sus selecciones y cuotas manuales |
+| PATCH | `/operator/markets/:id/status` | OPERATOR/ADMIN | Abrir, suspender o cerrar un mercado |
+| PATCH | `/operator/markets/:id/odds` | OPERATOR/ADMIN | Crear o cambiar cuota manual de una selección |
+
+Fechas ISO-8601 se interpretan como instantes y se almacenan en UTC. Las cuotas viajan como strings
+decimales de tres posiciones para evitar redondeos binarios. La cartelera pública excluye partidos
+cancelados incluso si se pide explícitamente ese estado.
 
 ## Historias de usuario
 
@@ -85,7 +103,7 @@ mercados y cuotas publicadas para consultar la oferta actual.
    defecto.
 2. El detalle muestra equipos, competición, inicio, estado, marcador disponible y mercados
    abiertos con sus selecciones y cuotas.
-3. Las cuotas son valores decimales positivos, identificados con fuente y fecha de actualización;
+3. Las cuotas decimales mayores que `1.000` se identifican con fuente y fecha de actualización;
    una cuota suspendida/cerrada no se presenta como disponible.
 4. Una persona no autenticada puede consultar únicamente datos publicados; no puede invocar
    operaciones de gestión.
@@ -99,11 +117,11 @@ corregir información operativa sin perder trazabilidad.
 
 1. `OPERATOR` y `ADMIN` pueden crear/editar competiciones y partidos, gestionar los cuatro tipos
    de mercado elegidos, y crear/editar/suspender/cerrar selecciones y cuotas manuales.
-2. Cada transición valida la tabla de estados; los cambios a estado terminal y las correcciones
-   posteriores requieren `ADMIN` y motivo.
-3. Las cuotas manuales positivas se validan en el servidor; cada cambio conserva historial con
+2. Cada transición valida la tabla de estados; finalizar, cancelar y corregir estados terminales
+   requiere `ADMIN` y motivo.
+3. Las cuotas manuales decimales mayores que `1.000` se validan en el servidor; cada cambio conserva historial con
    valor anterior/nuevo, actor y hora, y genera una auditoría.
-4. Apostadores y usuarios anónimos reciben `403` al intentar gestionar datos.
+4. Apostadores reciben `403` y usuarios sin sesión `401` al intentar gestionar datos.
 5. Las operaciones que compiten con una sincronización no pierden la modificación más reciente ni
    sobrescriben silenciosamente una cuota manual.
 
