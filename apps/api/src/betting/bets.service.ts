@@ -25,7 +25,13 @@ import {
   payoutLimit,
   stakeOutOfLimits,
 } from './bet-errors';
-import { type BetWithSelections, type PlaceBetDto, toBetView, type BetView } from './bets.dto';
+import {
+  type BetView,
+  type BetWithSelections,
+  type PlaceBetDto,
+  type SelectionHold,
+  toBetView,
+} from './bets.dto';
 import { potentialPayout, totalOddsX } from './odds';
 import { BettingSettingsService } from './settings.service';
 
@@ -49,6 +55,22 @@ const DAY_MS = 24 * 3_600_000;
 export function businessDayStart(now: Date): Date {
   const local = now.getTime() + BUSINESS_UTC_OFFSET_MS;
   return new Date(Math.floor(local / DAY_MS) * DAY_MS - BUSINESS_UTC_OFFSET_MS);
+}
+
+/** Filtro de estado y fechas del historial. */
+function filters(query: { status?: 'OPEN' | 'SETTLED'; from?: string; to?: string }) {
+  return {
+    status:
+      query.status === 'OPEN'
+        ? BetStatus.OPEN
+        : query.status === 'SETTLED'
+          ? { not: BetStatus.OPEN }
+          : undefined,
+    acceptedAt: {
+      gte: query.from ? new Date(query.from) : undefined,
+      lte: query.to ? new Date(query.to) : undefined,
+    },
+  } satisfies Prisma.BetWhereInput;
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -131,19 +153,78 @@ export class BetsService {
       pageSize: number;
     },
   ) {
+    const { items, total } = await this.page({ userId, ...filters(query) }, query);
+    return { items, page: query.page, pageSize: query.pageSize, total };
+  }
+
+  async get(userId: string, betId: string): Promise<BetView> {
+    const bet = await this.prisma.bet.findFirst({
+      where: { id: betId, userId },
+      include: { selections: true },
+    });
+    if (!bet) throw notFound('No encontramos esa apuesta.');
+    return toBetView(bet, await this.holdsFor([bet]));
+  }
+
+  /** Apuestas de un partido para el operador (FR-025); incluye el id del apostador. */
+  async listForOperator(query: {
+    matchId?: string;
+    status?: 'OPEN' | 'SETTLED';
+    page: number;
+    pageSize: number;
+  }) {
     const where: Prisma.BetWhereInput = {
-      userId,
-      status:
-        query.status === 'OPEN'
-          ? BetStatus.OPEN
-          : query.status === 'SETTLED'
-            ? { not: BetStatus.OPEN }
-            : undefined,
-      acceptedAt: {
-        gte: query.from ? new Date(query.from) : undefined,
-        lte: query.to ? new Date(query.to) : undefined,
-      },
+      ...filters(query),
+      selections: query.matchId ? { some: { matchId: query.matchId } } : undefined,
     };
+    const { rows, items, total } = await this.page(where, query);
+    return {
+      items: items.map((view, i) => ({ ...view, userId: rows[i]!.userId })),
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+    };
+  }
+
+  /** Partidos en espera y los resueltos en la última semana, con sus apuestas en espera. */
+  async listHolds() {
+    const holds = await this.prisma.matchHold.findMany({
+      where: {
+        OR: [{ resolvedAt: null }, { resolvedAt: { gte: new Date(Date.now() - 7 * DAY_MS) } }],
+      },
+      orderBy: [{ resolvedAt: { sort: 'desc', nulls: 'first' } }, { deadline: 'asc' }],
+    });
+    return Promise.all(
+      holds.map(async (h) => {
+        const [label, openBets] = await Promise.all([
+          this.prisma.betSelection.findFirst({
+            where: { matchId: h.matchId },
+            select: { matchLabel: true },
+          }),
+          this.prisma.bet.count({
+            where: {
+              status: BetStatus.OPEN,
+              selections: { some: { matchId: h.matchId, status: 'PENDING' } },
+            },
+          }),
+        ]);
+        return {
+          matchId: h.matchId,
+          matchLabel: label?.matchLabel ?? h.matchId,
+          status: h.status,
+          deadline: h.deadline.toISOString(),
+          resolution: h.resolution,
+          resolvedAt: h.resolvedAt?.toISOString() ?? null,
+          openBets,
+        };
+      }),
+    );
+  }
+
+  private async page(
+    where: Prisma.BetWhereInput,
+    query: { page: number; pageSize: number },
+  ): Promise<{ rows: BetWithSelections[]; items: BetView[]; total: number }> {
     const [total, rows] = await Promise.all([
       this.prisma.bet.count({ where }),
       this.prisma.bet.findMany({
@@ -154,16 +235,26 @@ export class BetsService {
         take: query.pageSize,
       }),
     ]);
-    return { items: rows.map(toBetView), page: query.page, pageSize: query.pageSize, total };
+    const holds = await this.holdsFor(rows);
+    return { rows, items: rows.map((bet) => toBetView(bet, holds)), total };
   }
 
-  async get(userId: string, betId: string): Promise<BetView> {
-    const bet = await this.prisma.bet.findFirst({
-      where: { id: betId, userId },
-      include: { selections: true },
+  /** Partidos en espera (sin resolver) de las selecciones pendientes de estas apuestas. */
+  private async holdsFor(bets: BetWithSelections[]): Promise<Map<string, SelectionHold>> {
+    const matchIds = [
+      ...new Set(
+        bets.flatMap((b) =>
+          b.selections.filter((s) => s.status === 'PENDING').map((s) => s.matchId),
+        ),
+      ),
+    ];
+    if (matchIds.length === 0) return new Map();
+    const holds = await this.prisma.matchHold.findMany({
+      where: { matchId: { in: matchIds }, resolvedAt: null },
     });
-    if (!bet) throw notFound('No encontramos esa apuesta.');
-    return toBetView(bet);
+    return new Map(
+      holds.map((h) => [h.matchId, { status: h.status, deadline: h.deadline.toISOString() }]),
+    );
   }
 
   /** Monto apostado hoy (día local de Ecuador) con saldo real o de bono. */

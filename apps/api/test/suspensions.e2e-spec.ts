@@ -1,8 +1,9 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import request from 'supertest';
 import { BettingSettingsService } from '../src/betting/settings.service';
 import type { MatchEventJob } from '../src/catalog/match-catalog.port';
 import type { PrismaClient } from '../src/generated/prisma/client';
-import { LedgerTransactionType } from '../src/generated/prisma/enums';
+import { LedgerTransactionType, Role } from '../src/generated/prisma/enums';
 import { HoldsService } from '../src/settlement/holds.service';
 import {
   balances,
@@ -207,6 +208,65 @@ describe('US4 · Partidos suspendidos, aplazados y cancelados (T047, SC-006)', (
       targetId: b.id,
       actorId: null,
       metadata: expect.objectContaining({ outcome: 'VOID', payout: 1000 }),
+    });
+  });
+
+  describe('vista de partidos en espera (T052, FR-025)', () => {
+    it('el operador ve el plazo y las apuestas en espera; el apostador no tiene acceso', async () => {
+      await bet(single('m1-1x2-home', '1.50', '10.00'));
+      await bet(threeWay);
+      await send(await statusEvent(app, 'm1', 'SUSPENDED'));
+      const operator = await signedInUser(app, prisma, { role: Role.OPERATOR });
+
+      const res = await request(app.getHttpServer())
+        .get('/operator/holds')
+        .set('Cookie', operator.cookie)
+        .expect(200);
+      expect(res.body).toEqual([
+        expect.objectContaining({
+          matchId: 'm1',
+          matchLabel: 'Liga Pro · Barcelona SC vs Emelec',
+          status: 'SUSPENDED',
+          deadline: expect.any(String),
+          resolution: null,
+          openBets: 2,
+        }),
+      ]);
+
+      const bets = await request(app.getHttpServer())
+        .get('/operator/bets?matchId=m1&status=OPEN')
+        .set('Cookie', operator.cookie)
+        .expect(200);
+      expect(bets.body.total).toBe(2);
+      expect(bets.body.items[0]).toEqual(expect.objectContaining({ userId: user.id }));
+
+      await request(app.getHttpServer())
+        .get('/operator/holds')
+        .set('Cookie', user.cookie)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get('/operator/bets')
+        .set('Cookie', user.cookie)
+        .expect(403);
+    });
+
+    it('el apostador ve su selección en espera con el plazo', async () => {
+      const b = await bet(single('m1-1x2-home', '1.50', '10.00'));
+      await send(await statusEvent(app, 'm1', 'POSTPONED'));
+      const res = await request(app.getHttpServer())
+        .get(`/bets/${b.id}`)
+        .set('Cookie', user.cookie)
+        .expect(200);
+      expect((res.body as BetView).selections[0]).toMatchObject({
+        hold: { status: 'POSTPONED', deadline: expect.any(String) },
+      });
+
+      await send(await statusEvent(app, 'm1', 'LIVE'));
+      const resumed = await request(app.getHttpServer())
+        .get('/bets?status=OPEN')
+        .set('Cookie', user.cookie)
+        .expect(200);
+      expect(resumed.body.items[0].selections[0].hold).toBeNull();
     });
   });
 });

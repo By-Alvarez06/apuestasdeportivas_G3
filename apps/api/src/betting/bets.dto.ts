@@ -86,6 +86,13 @@ export interface BetSelectionView {
   odds: Odds;
   status: string;
   startsAt: string;
+  /** Partido suspendido o aplazado: la selección espera hasta `deadline` (FR-021). */
+  hold: SelectionHold | null;
+}
+
+export interface SelectionHold {
+  status: 'SUSPENDED' | 'POSTPONED';
+  deadline: string;
 }
 
 export interface BetView {
@@ -106,7 +113,11 @@ export interface BetView {
 
 export type BetWithSelections = Bet & { selections: BetSelection[] };
 
-export function toBetView(bet: BetWithSelections): BetView {
+/** `holds`: partidos en espera por matchId; solo aplica a selecciones pendientes. */
+export function toBetView(
+  bet: BetWithSelections,
+  holds: ReadonlyMap<string, SelectionHold> = new Map(),
+): BetView {
   const selections = [...bet.selections].sort(
     (a, b) => a.startsAt.getTime() - b.startsAt.getTime(),
   );
@@ -131,6 +142,7 @@ export function toBetView(bet: BetWithSelections): BetView {
       odds: oddsToString(s.odds),
       status: s.status,
       startsAt: s.startsAt.toISOString(),
+      hold: s.status === 'PENDING' ? (holds.get(s.matchId) ?? null) : null,
     })),
   };
 }

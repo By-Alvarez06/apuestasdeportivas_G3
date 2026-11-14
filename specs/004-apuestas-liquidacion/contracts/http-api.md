@@ -26,7 +26,9 @@ Roles: **B** apostador, **O** operador, **A** administrador. Sin rol listado, 40
 
 `BetView`: `{ id, type, status, stake, source, totalOdds, potentialPayout, payout, live, acceptedAt,
 settledAt, selections: [{ id, selectionId, matchLabel, marketLabel, selectionLabel, odds, status,
-startsAt }] }`. `totalOdds` se trunca a 2 decimales solo para mostrar; el pago usa el producto exacto.
+startsAt, hold }] }`. `hold` es `{ status: "SUSPENDED" | "POSTPONED", deadline }` si la selección
+está pendiente en un partido en espera, o `null`. `GET /betting/limits` incluye además `openDebt`
+(saldo adeudado por re-liquidaciones; con más de 0.00 no se puede apostar ni retirar). `totalOdds` se trunca a 2 decimales solo para mostrar; el pago usa el producto exacto.
 
 Orden de validación en `POST /bets`: formato (400) → límites de monto (422) → selección inexistente
 (404) → mercado o partido no apostable (409 `MARKET_CLOSED` / `MATCH_STARTED`) → cuota distinta
@@ -46,8 +48,8 @@ día calendario de Ecuador (UTC-5) y solo suma apuestas con saldo real o de bono
 |--------|------|-----|-------|-----------|
 | GET | `/operator/settings` | O A | — | todas las claves de `BettingSetting` con su valor efectivo |
 | PUT | `/operator/settings/:key` | O A | `{ value }`; validado por clave; auditado con valor anterior y nuevo | 200 |
-| GET | `/operator/holds` | O A | partidos suspendidos/aplazados con plazo y nº de apuestas en espera | lista |
-| GET | `/operator/bets` | O A | `?matchId=&status=` | lista de apuestas (sin datos personales salvo id de usuario) |
+| GET | `/operator/holds` | O A | partidos en espera y los resueltos en los últimos 7 días | `[{ matchId, matchLabel, status, deadline, resolution, resolvedAt, openBets }]` |
+| GET | `/operator/bets` | O A | `?matchId=&status=OPEN\|SETTLED&page=&pageSize=` | lista paginada de `BetView` + `userId` (sin otros datos personales) |
 
 ## Cupones y bonos
 

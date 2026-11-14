@@ -201,7 +201,7 @@ corrección de resultado; comprobar estados, reembolsos, cuota 1.00 y auditoría
 
 🔖 Commit: `feat(api): suspensiones, aplazamientos, cancelaciones y re-liquidación con saldo adeudado`
 
-- [ ] T052 [US4] Añadir `GET /operator/holds` y `GET /operator/bets` (roles O A) en `apps/api/src/betting/operator.controller.ts`, con prueba de acceso por rol en `apps/api/test/betting-settings.e2e-spec.ts`; crear la página `/operador/partidos-en-espera` (partido, estado, plazo restante, apuestas en espera) en `apps/web/src/app/operador/partidos-en-espera/page.tsx`; mostrar en `/mis-apuestas` el estado "en espera" y el aviso de saldo adeudado
+- [X] T052 [US4] Añadir `GET /operator/holds` y `GET /operator/bets` (roles O A) en `apps/api/src/betting/operator.controller.ts`, con prueba de acceso por rol en `apps/api/test/betting-settings.e2e-spec.ts`; crear la página `/operador/partidos-en-espera` (partido, estado, plazo restante, apuestas en espera) en `apps/web/src/app/operador/partidos-en-espera/page.tsx`; mostrar en `/mis-apuestas` el estado "en espera" y el aviso de saldo adeudado
 
 🔖 Commit: `feat: vista de partidos en espera y saldo adeudado`
 

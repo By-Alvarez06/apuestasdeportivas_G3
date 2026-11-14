@@ -125,3 +125,41 @@ test('arma una combinada: suma partidos, reemplaza el del mismo partido y la con
   await page.goto('/mis-apuestas');
   await expect(page.getByText('Combinada de 2')).toBeVisible();
 });
+
+test('una apuesta sobre un partido suspendido se ve en espera con su plazo', async ({ page }) => {
+  await newBettorWith25(page);
+  await page.goto('/apuestas');
+  await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
+  await page.getByRole('button', { name: 'Confirmar apuesta de $10.00' }).click();
+  await expect(page.getByText(/Apuesta aceptada/)).toBeVisible();
+
+  const suspended = await operator.post('/api/dev/catalog/events', {
+    data: {
+      type: 'MATCH_STATUS_CHANGED',
+      sourceEventId: `e2e-susp-${Date.now()}`,
+      matchId: 'm5',
+      status: 'SUSPENDED',
+      scheduledStart: new Date(Date.now() + 27 * 3_600_000).toISOString(),
+    },
+  });
+  expect(suspended.status()).toBe(202);
+
+  await expect(async () => {
+    await page.goto('/mis-apuestas');
+    await expect(page.getByText(/Partido suspendido: si no se juega antes del/)).toBeVisible({
+      timeout: 1000,
+    });
+  }).toPass({ timeout: 10_000 });
+  await expect(page.getByText(/te devolvemos el monto/)).toBeVisible();
+
+  // Reanudado: deja de estar en espera.
+  await operator.post('/api/dev/catalog/events', {
+    data: {
+      type: 'MATCH_STATUS_CHANGED',
+      sourceEventId: `e2e-resume-${Date.now()}`,
+      matchId: 'm5',
+      status: 'SCHEDULED',
+      scheduledStart: new Date(Date.now() + 27 * 3_600_000).toISOString(),
+    },
+  });
+});

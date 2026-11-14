@@ -154,3 +154,11 @@
   justify-content: space-between;
   gap: 1rem;
 }
+
+/* Selección en espera: tarjeta amarilla, como los avisos. */
+.hold {
+  margin-top: 0.25rem;
+  padding-left: 0.625rem;
+  font-size: var(--step--1);
+  border-left: 3px solid var(--card-yellow);
+}

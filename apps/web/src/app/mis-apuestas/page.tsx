@@ -9,6 +9,7 @@ import { Notice } from '@/components/Notice';
 import { api, messageOf } from '@/lib/api';
 import {
   BET_STATUS_LABEL,
+  type BettingLimits,
   type BetsPage,
   type BetView,
   SELECTION_STATUS_LABEL,
@@ -54,12 +55,18 @@ function MyBets() {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<BetsPage | null>(null);
   const [error, setError] = useState('');
+  const [debt, setDebt] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
       if (filter) query.set('status', filter);
-      setData(await api<BetsPage>(`/bets?${query}`));
+      const [bets, limits] = await Promise.all([
+        api<BetsPage>(`/bets?${query}`),
+        api<BettingLimits>('/betting/limits'),
+      ]);
+      setData(bets);
+      setDebt(limits.openDebt === '0.00' ? null : limits.openDebt);
       setError('');
     } catch (e) {
       setError(messageOf(e));
@@ -84,6 +91,13 @@ function MyBets() {
   return (
     <div className={styles.page}>
       <h1>Mis apuestas</h1>
+
+      {debt && (
+        <Notice tone="warning">
+          Se corrigió el resultado de un partido y debes {usd(debt)}. Lo descontamos de tu próximo
+          depósito o premio; hasta entonces no puedes apostar ni retirar.
+        </Notice>
+      )}
 
       <div className={styles.filters} role="group" aria-label="Filtrar apuestas">
         {FILTERS.map((f) => (
@@ -174,6 +188,16 @@ function BetCard({ bet }: { bet: BetView }) {
                 <p className="muted">
                   {s.marketLabel} — {teams}
                 </p>
+                {s.hold && (
+                  <p className={styles.hold}>
+                    Partido {s.hold.status === 'SUSPENDED' ? 'suspendido' : 'aplazado'}: si no se
+                    juega antes del {dateTime(s.hold.deadline)}, esta selección se anula
+                    {bet.type === 'COMBO'
+                      ? ' y cuenta con cuota 1.00'
+                      : ' y te devolvemos el monto'}
+                    .
+                  </p>
+                )}
               </div>
               <div className={styles.selectionSide}>
                 <span className={styles.odds}>{s.odds}</span>

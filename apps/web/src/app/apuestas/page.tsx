@@ -143,6 +143,12 @@ function Betting() {
             {usd(placed.potentialPayout)}. <Link href="/mis-apuestas">Ver en Mis apuestas</Link>
           </Notice>
         )}
+        {limits && limits.openDebt !== '0.00' && (
+          <Notice tone="warning">
+            Debes {usd(limits.openDebt)} por la corrección de un resultado. Podrás apostar cuando se
+            descuente de tu próximo depósito o premio.
+          </Notice>
+        )}
         {slipNote && <Notice tone="warning">{slipNote}</Notice>}
         <BetSlip
           selections={slip}

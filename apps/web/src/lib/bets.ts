@@ -31,6 +31,8 @@ export interface BetSelectionView {
   odds: string;
   status: 'PENDING' | 'WON' | 'LOST' | 'VOID';
   startsAt: string;
+  /** Partido suspendido o aplazado: la selección espera hasta `deadline`. */
+  hold: { status: 'SUSPENDED' | 'POSTPONED'; deadline: string } | null;
 }
 
 export interface BetView {
@@ -62,6 +64,8 @@ export interface BettingLimits {
   dailyStakePerUser: string;
   dailyStakeUsed: string;
   comboMaxSelections: number;
+  /** Saldo adeudado por una corrección de resultado; con más de 0.00 no se puede apostar. */
+  openDebt: string;
 }
 
 /** Selección elegida en el boleto, con la cuota que el apostador está viendo. */
