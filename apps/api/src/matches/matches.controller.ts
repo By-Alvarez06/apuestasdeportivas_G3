@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query } from 
 import { type AuthUser, CurrentUser, Public, Roles } from '../common/auth/decorators';
 import { Meta, type RequestMeta } from '../common/request-meta';
 import { Role } from '../generated/prisma/enums';
+import { FootballSyncService } from './football-sync';
 import {
   CreateCompetitionDto,
   CreateMarketDto,
@@ -10,6 +11,7 @@ import {
   MatchStatusDto,
   MarketStatusDto,
   SetOddsDto,
+  UpdateCompetitionDto,
   UpdateMatchDto,
 } from './matches.dto';
 import { MatchesService } from './matches.service';
@@ -34,7 +36,15 @@ export class MatchesController {
 @Roles(Role.OPERATOR, Role.ADMIN)
 @Controller('operator')
 export class OperatorMatchesController {
-  constructor(private readonly matches: MatchesService) {}
+  constructor(
+    private readonly matches: MatchesService,
+    private readonly footballSync: FootballSyncService,
+  ) {}
+
+  @Get('sync/status')
+  syncStatus() {
+    return this.footballSync.status();
+  }
 
   @Get('competitions')
   listCompetitions() {
@@ -48,6 +58,16 @@ export class OperatorMatchesController {
     @Meta() meta: RequestMeta,
   ) {
     return this.matches.createCompetition(user.id, dto, meta);
+  }
+
+  @Patch('competitions/:id')
+  updateCompetition(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCompetitionDto,
+    @Meta() meta: RequestMeta,
+  ) {
+    return this.matches.updateCompetition(user.id, id, dto, meta);
   }
 
   @Get('matches')

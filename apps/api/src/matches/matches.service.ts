@@ -28,6 +28,7 @@ import type {
   MatchFiltersDto,
   MatchStatusDto,
   SetOddsDto,
+  UpdateCompetitionDto,
   UpdateMatchDto,
 } from './matches.dto';
 
@@ -109,6 +110,9 @@ export class MatchesService {
           : { not: MatchStatus.CANCELLED },
       competitionId: filters.competitionId,
       kickoffAt: this.kickoffFilter(filters),
+      ...(filters.from === undefined && filters.to === undefined
+        ? { OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }
+        : {}),
     };
     const total = await this.prisma.match.count({ where });
     const rows = await this.prisma.match.findMany({
@@ -204,6 +208,45 @@ export class MatchesService {
           targetType: 'competition',
           targetId: competition.id,
           metadata: { name: competition.name },
+          ...meta,
+        },
+        tx,
+      );
+      return competition;
+    });
+  }
+
+  async updateCompetition(
+    actorId: string,
+    id: string,
+    dto: UpdateCompetitionDto,
+    meta: RequestMeta,
+  ) {
+    if (dto.name === undefined && dto.country === undefined && dto.logoUrl === undefined) {
+      throw validationError('Indica al menos un campo para actualizar.');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.competition.findUnique({ where: { id } });
+      if (!current) throw notFound('No encontramos la competición.');
+      const competition = await tx.competition.update({
+        where: { id },
+        data: {
+          name: dto.name?.trim(),
+          country: dto.country === undefined ? undefined : dto.country.trim() || null,
+          logoUrl: dto.logoUrl === undefined ? undefined : dto.logoUrl.trim() || null,
+        },
+        select: { id: true, name: true, country: true },
+      });
+      await this.audit.record(
+        {
+          actorId,
+          action: 'match.competition.updated',
+          targetType: 'competition',
+          targetId: id,
+          metadata: {
+            from: { name: current.name, country: current.country ?? '' },
+            to: { name: competition.name, country: competition.country ?? '' },
+          },
           ...meta,
         },
         tx,
@@ -351,6 +394,7 @@ export class MatchesService {
           status: next,
           homeScore: dto.homeScore,
           awayScore: dto.awayScore,
+          statusSource: OddsSource.MANUAL,
         },
       });
       if (

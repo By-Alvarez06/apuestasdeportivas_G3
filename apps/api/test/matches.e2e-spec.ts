@@ -6,7 +6,13 @@ import {
   MatchStatus as PublicMatchStatus,
 } from '@apuestas/shared';
 import type { PrismaClient } from '../src/generated/prisma/client';
-import { MarketStatus, OddsSource, Role, UserStatus } from '../src/generated/prisma/enums';
+import {
+  MarketStatus,
+  MatchStatus as DbMatchStatus,
+  OddsSource,
+  Role,
+  UserStatus,
+} from '../src/generated/prisma/enums';
 import { createTestApp, createTestPrisma, resetDatabase, signedInUser, WEB_ORIGIN } from './setup';
 
 describe('Partidos y mercados (spec 3)', () => {
@@ -56,6 +62,49 @@ describe('Partidos y mercados (spec 3)', () => {
     expect(response.body.status).toBe(PublicMatchStatus.SCHEDULED);
     return response.body.id as string;
   }
+
+  it('permite editar competiciones y conserva la auditoría del cambio', async () => {
+    const created = await post(
+      '/operator/competitions',
+      { name: 'Liga de Prueba', country: 'Ecuador' },
+      operatorCookie,
+    ).expect(201);
+    await patch(
+      `/operator/competitions/${created.body.id}`,
+      { name: 'Liga Nacional', country: 'Ecuador' },
+      operatorCookie,
+    )
+      .expect(200)
+      .expect(({ body }) => expect(body.name).toBe('Liga Nacional'));
+
+    expect(await prisma.auditLog.count({ where: { action: 'match.competition.updated' } })).toBe(1);
+  });
+
+  it('muestra próximos y en vivo por defecto, no partidos históricos finalizados', async () => {
+    const upcomingId = await createMatch();
+    const liveId = await createMatch();
+    const finishedId = await createMatch();
+    await prisma.match.update({
+      where: { id: liveId },
+      data: {
+        kickoffAt: new Date('2026-11-13T20:00:00.000Z'),
+        status: DbMatchStatus.LIVE,
+      },
+    });
+    await prisma.match.update({
+      where: { id: finishedId },
+      data: {
+        kickoffAt: new Date('2026-11-12T20:00:00.000Z'),
+        status: DbMatchStatus.FINISHED,
+      },
+    });
+
+    const response = await request(app.getHttpServer()).get('/matches').expect(200);
+    const ids = response.body.items.map((match: { id: string }) => match.id);
+    expect(ids).toContain(upcomingId);
+    expect(ids).toContain(liveId);
+    expect(ids).not.toContain(finishedId);
+  });
 
   async function createResultMarket(matchId: string): Promise<string> {
     const response = await post(
@@ -196,6 +245,9 @@ describe('Partidos y mercados (spec 3)', () => {
       { status: PublicMatchStatus.LIVE },
       operatorCookie,
     ).expect(200);
+    expect(await prisma.match.findUniqueOrThrow({ where: { id: matchId } })).toMatchObject({
+      statusSource: OddsSource.MANUAL,
+    });
 
     await patch(
       `/operator/matches/${matchId}/status`,

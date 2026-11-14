@@ -67,6 +67,24 @@ export class CreateCompetitionDto {
   logoUrl?: string;
 }
 
+export class UpdateCompetitionDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  country?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
+  logoUrl?: string;
+}
+
 export class CreateMatchDto {
   @IsOptional()
   @IsUUID()
