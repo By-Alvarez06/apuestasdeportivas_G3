@@ -18,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { IdempotencyConflictError } from '../wallet/wallet.port';
 import type { Tx } from '../wallet/ledger.service';
 import { WalletService } from '../wallet/wallet.service';
+import { DebtService } from '../settlement/debt.service';
 
 const RECENT_DEPOSIT_MS = 24 * 60 * 60 * 1000;
 const TWO_FACTOR_WINDOW_MS = 15 * 60 * 1000;
@@ -70,6 +71,7 @@ export class WithdrawalsService {
     private readonly wallet: WalletService,
     private readonly twoFactor: TwoFactorService,
     private readonly audit: AuditService,
+    private readonly debts: DebtService,
     config: ConfigService,
   ) {
     this.reviewThreshold = Number(
@@ -97,6 +99,9 @@ export class WithdrawalsService {
         throw new IdempotencyConflictError();
       return withdrawalView(existing);
     }
+
+    // Spec 4 (FR-020): con saldo adeudado por una re-liquidación no se puede retirar.
+    await this.debts.assertNoOpenDebt(userId);
 
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (user.status !== UserStatus.ACTIVE) throw forbidden('Confirma tu correo para retirar.');

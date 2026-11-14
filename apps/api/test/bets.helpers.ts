@@ -155,3 +155,30 @@ export const processed = (prisma: PrismaClient, sourceEventId: string) =>
   waitFor(() =>
     prisma.matchEvent.findFirst({ where: { sourceEventId, processedAt: { not: null } } }),
   );
+
+/** Cambio de estado de un partido del catálogo simulado (suspendido, aplazado, cancelado…). */
+export async function statusEvent(
+  app: NestExpressApplication,
+  matchId: string,
+  status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'SUSPENDED' | 'POSTPONED' | 'CANCELLED',
+  sourceEventId = `st-${matchId}-${status}-${crypto.randomUUID()}`,
+): Promise<MatchEventJob> {
+  const [quote] = await catalogOf(app).getQuotes([`${matchId}-1x2-home`]);
+  return {
+    type: 'MATCH_STATUS_CHANGED',
+    sourceEventId,
+    matchId,
+    status,
+    scheduledStart: quote!.startsAt.toISOString(),
+    occurredAt: new Date().toISOString(),
+  };
+}
+
+/** Corrección de un mercado 1X2: el resultado completo nuevo. */
+export function correction1x2(
+  matchId: string,
+  winner: 'home' | 'draw' | 'away',
+  sourceEventId = `cor-${matchId}-${crypto.randomUUID()}`,
+): MatchEventJob {
+  return { ...result1x2(matchId, winner, sourceEventId), type: 'RESULT_CORRECTED' };
+}

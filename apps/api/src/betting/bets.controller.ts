@@ -6,6 +6,7 @@ import { DeviceId } from '../common/device-id.middleware';
 import { IdempotencyKey } from '../common/idempotency-key.decorator';
 import { Meta, type RequestMeta } from '../common/request-meta';
 import { Role } from '../generated/prisma/enums';
+import { DebtService } from '../settlement/debt.service';
 import { BetsQuery, type BetView, PlaceBetDto } from './bets.dto';
 import { BetsService } from './bets.service';
 import { BettingSettingsService } from './settings.service';
@@ -16,6 +17,7 @@ export class BetsController {
   constructor(
     private readonly bets: BetsService,
     private readonly settings: BettingSettingsService,
+    private readonly debts: DebtService,
   ) {}
 
   /** 201 si se creó; 200 si la misma Idempotency-Key ya había creado esta apuesta. */
@@ -50,7 +52,9 @@ export class BetsController {
   @Get('betting/limits')
   async limits(@CurrentUser() user: AuthUser) {
     const s = await this.settings.getAll();
-    const used = user.role === Role.BETTOR ? await this.bets.dailyStakeUsed(user.id) : 0;
+    const bettor = user.role === Role.BETTOR;
+    const used = bettor ? await this.bets.dailyStakeUsed(user.id) : 0;
+    const debt = bettor ? await this.debts.openDebt(user.id) : 0;
     return {
       minStake: fromCents(s['limits.minStake']),
       maxStake: fromCents(s['limits.maxStake']),
@@ -58,6 +62,8 @@ export class BetsController {
       dailyStakePerUser: fromCents(s['limits.dailyStakePerUser']),
       dailyStakeUsed: fromCents(used),
       comboMaxSelections: s['combo.maxSelections'],
+      /** Saldo adeudado por re-liquidaciones; mientras sea mayor que 0 no se puede apostar. */
+      openDebt: fromCents(debt),
     };
   }
 }

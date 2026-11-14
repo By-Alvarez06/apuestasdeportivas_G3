@@ -13,6 +13,7 @@ import {
 import { Prisma } from '../generated/prisma/client';
 import { BetStatus, BetType, StakeSource } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
+import { DebtService } from '../settlement/debt.service';
 import { IdempotencyConflictError, WalletNotFoundError } from '../wallet/wallet.port';
 import { WalletService } from '../wallet/wallet.service';
 import {
@@ -64,6 +65,7 @@ export class BetsService {
     private readonly wallet: WalletService,
     private readonly audit: AuditService,
     private readonly settings: BettingSettingsService,
+    private readonly debts: DebtService,
     @Inject(MATCH_CATALOG) private readonly catalog: MatchCatalogPort,
   ) {}
 
@@ -245,6 +247,9 @@ export class BetsService {
         const locked = await tx.$queryRaw<{ id: string }[]>`
           SELECT id FROM "Wallet" WHERE "userId" = ${userId}::uuid FOR UPDATE`;
         if (locked.length === 0) throw new WalletNotFoundError();
+
+        // FR-020: con saldo adeudado por una re-liquidación no se puede apostar.
+        await this.debts.assertNoOpenDebt(userId, tx);
 
         const limit = await this.settings.get('limits.dailyStakePerUser');
         const used = await this.dailyStakeUsed(userId, tx);

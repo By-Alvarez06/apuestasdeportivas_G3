@@ -7,6 +7,7 @@ import { MatchEventType } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { QUEUES } from '../queues/queue-names';
 import { NotifierService } from '../realtime/notifier.service';
+import { HoldsService } from './holds.service';
 import { type SettledBet, SettlementService } from './settlement.service';
 
 /**
@@ -21,6 +22,7 @@ export class SettlementProcessor extends WorkerHost {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settlement: SettlementService,
+    private readonly holds: HoldsService,
     private readonly notifier: NotifierService,
   ) {
     super();
@@ -35,9 +37,12 @@ export class SettlementProcessor extends WorkerHost {
       case MatchEventType.MARKET_RESULTED:
         changed = await this.settlement.applyMarketResult(event);
         break;
-      default:
-        // Suspensiones, aplazamientos y correcciones: US4.
-        this.logger.warn(`Evento ${event.type} ${event.sourceEventId} aún sin manejar`);
+      case MatchEventType.RESULT_CORRECTED:
+        changed = await this.settlement.applyCorrection(event);
+        break;
+      case MatchEventType.MATCH_STATUS_CHANGED:
+        changed = await this.holds.handleStatusChange(event);
+        break;
     }
 
     await this.prisma.matchEvent.update({
