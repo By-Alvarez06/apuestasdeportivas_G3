@@ -58,8 +58,8 @@ usan todas las historias.
 
 🔖 Commit: `feat(api): esquema de apuestas, liquidación, cupones y fraude con triggers de integridad`
 
-- [ ] T009 [P] Añadir a `packages/shared/src/types.ts` los enums `BetType`, `StakeSource`, `BetStatus` (reemplaza el actual sin uso), `SelectionStatus`, `CouponType`, `RedemptionStatus`, `BonusStatus`, `FraudRule`, `AlertStatus` y los `ErrorCode` nuevos de [contracts/http-api.md](contracts/http-api.md); y `oddsToString`/`parseOdds` (centésimas ↔ `"2.10"`) en `packages/shared/src/odds.ts`, exportados desde `packages/shared/src/index.ts`
-- [ ] T010 [P] Pruebas unitarias primero, luego implementación de `apps/api/src/betting/odds.ts`: `potentialPayout(stake, odds[])` exacto con `BigInt` y redondeo hacia abajo, `totalOddsX(odds[])`, `displayTotalOdds()` truncada a 2 decimales, `applyBoost(odds, pct, cap)`; casos 10.00 × 2.10 = 21.00, combinada 1.50·2.00·1.80 = 5.40, selección anulada = 1.00, montos que no dividen exacto, en `apps/api/src/betting/odds.spec.ts`
+- [X] T009 [P] Añadir a `packages/shared/src/types.ts` los enums `BetType`, `StakeSource`, `BetStatus` (reemplaza el actual sin uso), `SelectionStatus`, `CouponType`, `RedemptionStatus`, `BonusStatus`, `FraudRule`, `AlertStatus` y los `ErrorCode` nuevos de [contracts/http-api.md](contracts/http-api.md); y `oddsToString`/`parseOdds` (centésimas ↔ `"2.10"`) en `packages/shared/src/odds.ts`, exportados desde `packages/shared/src/index.ts`
+- [X] T010 [P] Pruebas unitarias primero, luego implementación de `apps/api/src/betting/odds.ts`: `potentialPayout(stake, odds[])` exacto con `BigInt` y redondeo hacia abajo, `totalOddsX(odds[])`, `displayTotalOdds()` truncada a 2 decimales, `applyBoost(odds, pct, cap)`; casos 10.00 × 2.10 = 21.00, combinada 1.50·2.00·1.80 = 5.40, selección anulada = 1.00, montos que no dividen exacto, en `apps/api/src/betting/odds.spec.ts`
 
 🔖 Commit: `feat(api): cálculo exacto de cuotas y pagos`
 
