@@ -80,6 +80,22 @@ describe('Partidos y mercados (spec 3)', () => {
     expect(await prisma.auditLog.count({ where: { action: 'match.competition.updated' } })).toBe(1);
   });
 
+  it('publica competiciones para filtrar la cartelera sin iniciar sesión', async () => {
+    await post(
+      '/operator/competitions',
+      { name: 'Liga de Prueba', country: 'Ecuador' },
+      operatorCookie,
+    ).expect(201);
+    await request(app.getHttpServer())
+      .get('/matches/competitions')
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body).toEqual([
+          expect.objectContaining({ name: 'Liga de Prueba', country: 'Ecuador' }),
+        ]),
+      );
+  });
+
   it('muestra próximos y en vivo por defecto, no partidos históricos finalizados', async () => {
     const upcomingId = await createMatch();
     const liveId = await createMatch();

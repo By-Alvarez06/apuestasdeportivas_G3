@@ -21,6 +21,12 @@ export class MatchesController {
   constructor(private readonly matches: MatchesService) {}
 
   @Public()
+  @Get('competitions')
+  listCompetitions() {
+    return this.matches.listCompetitions();
+  }
+
+  @Public()
   @Get()
   list(@Query() filters: MatchFiltersDto) {
     return this.matches.listPublic(filters);

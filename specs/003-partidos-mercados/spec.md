@@ -77,6 +77,7 @@ goles la línea identifica mercados distintos; los otros tipos no aceptan línea
 | Método | Ruta | Acceso | Propósito |
 |---|---|---|---|
 | GET | `/matches` | Público | Cartelera paginada; filtros `from`, `to`, `competitionId`, `status`, `page`, `pageSize` |
+| GET | `/matches/competitions` | Público | Competiciones publicadas disponibles para filtrar la cartelera |
 | GET | `/matches/:id` | Público | Partido y mercados abiertos; cuota manual preferida |
 | GET/POST | `/operator/competitions` | OPERATOR/ADMIN | Listar y crear competiciones |
 | GET/POST | `/operator/matches` | OPERATOR/ADMIN | Cartelera operativa y creación manual |
