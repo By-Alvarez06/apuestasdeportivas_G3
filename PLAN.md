@@ -93,11 +93,15 @@ F7 Reportes+Cierre                                               █████
 ### F3 — Partidos y mercados (S3)
 - [ ] Modelo de competición, partido, mercado, selección y cuota.
 - [ ] Máquina de estados del partido: `programado → en_vivo → finalizado`, `suspendido`, `aplazado`, `cancelado`.
-- [ ] Worker BullMQ de sincronización con API-Football, con presupuesto de peticiones diario y frecuencia adaptativa (alta solo en vivo).
-- [ ] CRUD de operador para partidos, mercados y cuotas manuales.
-- [ ] UI: cartelera de partidos y detalle de mercados.
+- [ ] Worker BullMQ de sincronización con API-Football, con presupuesto diario obligatorio/fail-closed y frecuencia adaptativa (prioridad alta solo en vivo).
+- [ ] CRUD auditable de operador para partidos, mercados y cuotas manuales.
+- [ ] UI: cartelera, detalle de mercados y gestión de operador.
+- [ ] Reportes operativos con dashboard y exportación CSV/PDF con filtros coincidentes.
 
-**Criterio de cierre**: los partidos del día se importan solos sin superar la cuota del plan de API-Football.
+**Criterio de cierre**: pruebas demuestran que los partidos se importan idempotentemente, que las
+peticiones nunca superan el presupuesto configurado y que presupuesto ausente implica cero
+peticiones; gestión de operador y reportes aplican permisos/auditoría, y CSV/PDF respetan los
+mismos filtros. Alcance y reglas: [`specs/003-partidos-mercados/spec.md`](specs/003-partidos-mercados/spec.md).
 
 ### F4 — Apuestas (S4)
 - [ ] Boleto de apuesta (bet slip) simple y combinada.
