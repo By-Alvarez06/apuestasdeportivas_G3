@@ -25,6 +25,11 @@ export function useSession() {
 }
 
 const NAV: { href: string; label: string; roles: UserRole[] }[] = [
+  {
+    href: '/operador/partidos',
+    label: 'Partidos',
+    roles: [UserRole.OPERATOR, UserRole.ADMIN],
+  },
   { href: '/billetera', label: 'Billetera', roles: [UserRole.BETTOR] },
   { href: '/admin/usuarios', label: 'Usuarios', roles: [UserRole.ADMIN] },
   { href: '/admin/retiros', label: 'Retiros', roles: [UserRole.ADMIN] },
