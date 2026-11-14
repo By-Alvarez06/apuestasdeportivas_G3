@@ -104,7 +104,7 @@ válidas e inválidas y comprobar que solo las válidas se aceptan y el saldo ba
 
 🔖 Commit: `feat(api): aceptación atómica de apuestas simples con cuota congelada y límites`
 
-- [ ] T026 [US1] Crear `OperatorBettingController` con `GET /operator/settings` y `PUT /operator/settings/:key` (roles O A) en `apps/api/src/betting/operator.controller.ts`; prueba de integración (apostador → 403, cambio auditado con valor anterior y nuevo, el nuevo límite aplica a la siguiente apuesta) en `apps/api/test/betting-settings.e2e-spec.ts`
+- [X] T026 [US1] Crear `OperatorBettingController` con `GET /operator/settings` y `PUT /operator/settings/:key` (roles O A) en `apps/api/src/betting/operator.controller.ts`; prueba de integración (apostador → 403, cambio auditado con valor anterior y nuevo, el nuevo límite aplica a la siguiente apuesta) en `apps/api/test/betting-settings.e2e-spec.ts`
 
 🔖 Commit: `feat(api): ajustes de límites de apuestas para operadores`
 
