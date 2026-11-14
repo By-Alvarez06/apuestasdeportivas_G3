@@ -67,8 +67,8 @@ export class SettlementService {
   }
 
   /**
-   * Aplica el evento a una apuesta abierta. Devuelve la apuesta si cambió algo (una selección o su
-   * estado), o null si no había nada que hacer.
+   * Aplica el evento a las selecciones de una apuesta y, si sigue abierta y queda resuelta, la
+   * liquida. Devuelve la apuesta si cambió algo, o null si no había nada que hacer.
    */
   private settleBet(
     betId: string,
@@ -82,8 +82,6 @@ export class SettlementService {
           where: { id: betId },
           include: { selections: true },
         });
-        if (bet.status !== BetStatus.OPEN) return null;
-
         let touched = false;
         for (const s of bet.selections) {
           const next = resolve(s);
@@ -96,6 +94,11 @@ export class SettlementService {
           touched = true;
         }
         if (!touched) return null;
+
+        // Una apuesta ya liquidada (p. ej. una combinada que perdió antes) registra el resultado
+        // de sus otras selecciones, pero no se vuelve a liquidar: eso solo lo hace una corrección.
+        if (bet.status !== BetStatus.OPEN)
+          return { userId: bet.userId, bet: toBetView(bet), version: bet.settledVersion };
 
         const outcome = betOutcome({ stake: bet.stake, selections: bet.selections });
         if (outcome.status === BetStatus.OPEN)

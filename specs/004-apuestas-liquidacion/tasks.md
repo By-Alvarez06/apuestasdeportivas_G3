@@ -162,13 +162,13 @@ liquidación anticipada al perder una selección.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T042 [P] [US3] Ampliar `apps/api/src/settlement/bet-outcome.spec.ts` con combinadas: todas ganan → monto × producto; una pierde → perdida aunque haya pendientes; pendientes sin pérdidas → sigue abierta; una anulada → cuota 1.00; todas anuladas → reembolso
-- [ ] T043 [P] [US3] Pruebas de integración: combinada 1.50·2.00·1.80 de 10.00 → 5.40 y 54.00 con un solo débito; dos selecciones del mismo partido → `VALIDATION_ERROR`; 1 o 11 selecciones → `VALIDATION_ERROR`; una cuota cambiada → `ODDS_CHANGED` y nada aceptado; liquidación como perdida al primer resultado perdedor y como ganada al último ganador, en `apps/api/test/bets-combo.e2e-spec.ts`
+- [X] T042 [P] [US3] Ampliar `apps/api/src/settlement/bet-outcome.spec.ts` con combinadas: todas ganan → monto × producto; una pierde → perdida aunque haya pendientes; pendientes sin pérdidas → sigue abierta; una anulada → cuota 1.00; todas anuladas → reembolso
+- [X] T043 [P] [US3] Pruebas de integración: combinada 1.50·2.00·1.80 de 10.00 → 5.40 y 54.00 con un solo débito; dos selecciones del mismo partido → `VALIDATION_ERROR`; 1 o 11 selecciones → `VALIDATION_ERROR`; una cuota cambiada → `ODDS_CHANGED` y nada aceptado; liquidación como perdida al primer resultado perdedor y como ganada al último ganador, en `apps/api/test/bets-combo.e2e-spec.ts`
 
 ### Implementation for User Story 3
 
-- [ ] T044 [US3] Extender `BetsService.place` y `PlaceBetDto` a combinadas (2..`combo.maxSelections`, partidos distintos, revalidación de todas las cuotas, retardo si alguna es en vivo, `totalOddsX` y pago con `odds.ts`) en `apps/api/src/betting/bets.service.ts` y `apps/api/src/betting/bets.dto.ts`
-- [ ] T045 [US3] Extender `betOutcome` y `SettlementService` a combinadas (liquidar en cuanto una selección pierde; pago con las cuotas congeladas y 1.00 en anuladas) en `apps/api/src/settlement/bet-outcome.ts` y `apps/api/src/settlement/settlement.service.ts`
+- [X] T044 [US3] Extender `BetsService.place` y `PlaceBetDto` a combinadas (2..`combo.maxSelections`, partidos distintos, revalidación de todas las cuotas, retardo si alguna es en vivo, `totalOddsX` y pago con `odds.ts`) en `apps/api/src/betting/bets.service.ts` y `apps/api/src/betting/bets.dto.ts`
+- [X] T045 [US3] Extender `betOutcome` y `SettlementService` a combinadas (liquidar en cuanto una selección pierde; pago con las cuotas congeladas y 1.00 en anuladas) en `apps/api/src/settlement/bet-outcome.ts` y `apps/api/src/settlement/settlement.service.ts`
 
 🔖 Commit: `feat(api): apuestas combinadas`
 
