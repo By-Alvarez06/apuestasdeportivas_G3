@@ -91,17 +91,22 @@ F7 Reportes+Cierre                                               █████
 **Criterio de cierre**: pruebas de concurrencia (N depósitos/débitos simultáneos dejan el saldo exacto) y de doble confirmación (se acredita una sola vez).
 
 ### F3 — Partidos y mercados (S3)
-- [ ] Modelo de competición, partido, mercado, selección y cuota.
-- [ ] Máquina de estados del partido: `programado → en_vivo → finalizado`, `suspendido`, `aplazado`, `cancelado`.
-- [ ] Worker BullMQ de sincronización con API-Football, con presupuesto diario obligatorio/fail-closed y frecuencia adaptativa (prioridad alta solo en vivo).
-- [ ] CRUD auditable de operador para partidos, mercados y cuotas manuales.
-- [ ] UI: cartelera, detalle de mercados y gestión de operador.
-- [ ] Reportes operativos con dashboard y exportación CSV/PDF con filtros coincidentes.
+- [x] Modelo de competición, partido, mercado, selección y cuota.
+- [x] Máquina de estados del partido: `programado → en_vivo → finalizado`, `suspendido`, `aplazado`, `cancelado`.
+- [x] Worker BullMQ de sincronización con API-Football, con presupuesto diario obligatorio/fail-closed y frecuencia adaptativa (prioridad alta solo en vivo).
+- [x] CRUD auditable de operador para partidos, mercados y cuotas manuales.
+- [x] UI: cartelera, detalle de mercados y gestión de operador.
+- [x] Reportes operativos con dashboard y exportación CSV/PDF con filtros coincidentes.
 
 **Criterio de cierre**: pruebas demuestran que los partidos se importan idempotentemente, que las
 peticiones nunca superan el presupuesto configurado y que presupuesto ausente implica cero
 peticiones; gestión de operador y reportes aplican permisos/auditoría, y CSV/PDF respetan los
 mismos filtros. Alcance y reglas: [`specs/003-partidos-mercados/spec.md`](specs/003-partidos-mercados/spec.md).
+
+La implementación está en `feature/spec-3`. Para habilitar uso real aún se debe configurar el
+presupuesto contratado de API-Football, la casa habilitada para cuotas y ejecutar la provisión de
+la cuenta PostgreSQL de reportes de solo lectura. La validación e2e API completa también debe
+repetirse en un entorno donde Node no cierre el proceso nativo.
 
 ### F4 — Apuestas (S4)
 - [ ] Boleto de apuesta (bet slip) simple y combinada.
