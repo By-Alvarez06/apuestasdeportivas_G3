@@ -30,6 +30,16 @@ const NAV: { href: string; label: string; roles: UserRole[] }[] = [
   { href: '/apuestas', label: 'Apostar', roles: [UserRole.BETTOR] },
   { href: '/mis-apuestas', label: 'Mis apuestas', roles: [UserRole.BETTOR] },
   { href: '/promociones', label: 'Promociones', roles: [UserRole.BETTOR] },
+  {
+    href: '/operador/partidos',
+    label: 'Partidos',
+    roles: [UserRole.OPERATOR, UserRole.ADMIN],
+  },
+  {
+    href: '/operador/reportes',
+    label: 'Informes',
+    roles: [UserRole.OPERATOR, UserRole.ADMIN],
+  },
   { href: '/billetera', label: 'Billetera', roles: [UserRole.BETTOR] },
   {
     href: '/operador/cupones',

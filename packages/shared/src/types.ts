@@ -104,6 +104,55 @@ export enum StakeSource {
 }
 
 /** Ciclo de vida de una apuesta: OPEN hasta liquidarse; VOID = reembolsada. */
+export enum MarketType {
+  RESULT_1X2 = 'result_1x2',
+  DOUBLE_CHANCE = 'double_chance',
+  TOTAL_GOALS = 'total_goals',
+  BOTH_TEAMS_SCORE = 'both_teams_score',
+}
+
+export enum MarketStatus {
+  OPEN = 'open',
+  SUSPENDED = 'suspended',
+  CLOSED = 'closed',
+}
+
+export enum OddsSource {
+  MANUAL = 'MANUAL',
+  API_FOOTBALL = 'API_FOOTBALL',
+}
+
+export interface MatchSelection {
+  id: string;
+  key: string;
+  label: string;
+  odds: string;
+  source: OddsSource;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface MatchMarket {
+  id: string;
+  type: MarketType;
+  line: string | null;
+  status: MarketStatus;
+  selections: MatchSelection[];
+}
+
+export interface MatchSummary {
+  id: string;
+  kickoffAt: string;
+  status: MatchStatus;
+  homeScore: number | null;
+  awayScore: number | null;
+  competition: { id: string; name: string; country: string | null } | null;
+  homeTeam: { id: string; name: string; logoUrl: string | null };
+  awayTeam: { id: string; name: string; logoUrl: string | null };
+  markets: MatchMarket[];
+}
+
+/** Bet status lifecycle. */
 export enum BetStatus {
   OPEN = 'OPEN',
   WON = 'WON',

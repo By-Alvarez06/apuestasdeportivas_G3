@@ -26,6 +26,33 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum MatchStatus {
+  SCHEDULED @map("scheduled")
+  LIVE      @map("live")
+  FINISHED  @map("finished")
+  SUSPENDED @map("suspended")
+  POSTPONED @map("postponed")
+  CANCELLED @map("cancelled")
+}
+
+enum MarketStatus {
+  OPEN      @map("open")
+  SUSPENDED @map("suspended")
+  CLOSED    @map("closed")
+}
+
+enum MarketType {
+  RESULT_1X2       @map("result_1x2")
+  DOUBLE_CHANCE    @map("double_chance")
+  TOTAL_GOALS      @map("total_goals")
+  BOTH_TEAMS_SCORE @map("both_teams_score")
+}
+
+enum OddsSource {
+  MANUAL
+  API_FOOTBALL
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   email         String     @unique
@@ -574,4 +601,102 @@ model FraudAlert {
   resolvedAt   DateTime?
 
   @@index([status, createdAt])
+}
+
+// ── Partidos, mercados y cuotas (spec 3) ─────────────────────────────────────
+
+model Competition {
+  id            String   @id @default(uuid()) @db.Uuid
+  apiFootballId Int?     @unique
+  name          String
+  country       String?
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  matches       Match[]
+}
+
+model Team {
+  id            String   @id @default(uuid()) @db.Uuid
+  apiFootballId Int?     @unique
+  name          String
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  homeMatches   Match[]  @relation("HomeTeam")
+  awayMatches   Match[]  @relation("AwayTeam")
+}
+
+model Match {
+  id            String       @id @default(uuid()) @db.Uuid
+  apiFootballId Int?         @unique
+  competitionId String?      @db.Uuid
+  competition   Competition? @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  homeTeamId    String       @db.Uuid
+  homeTeam      Team         @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeamId    String       @db.Uuid
+  awayTeam      Team         @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  kickoffAt     DateTime
+  status        MatchStatus  @default(SCHEDULED)
+  statusSource  OddsSource   @default(MANUAL)
+  homeScore     Int?
+  awayScore     Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  markets       Market[]
+
+  @@index([status, kickoffAt])
+  @@index([competitionId, kickoffAt])
+}
+
+model Market {
+  id         String       @id @default(uuid()) @db.Uuid
+  matchId    String       @db.Uuid
+  match      Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  type       MarketType
+  line       Decimal?     @db.Decimal(6, 2)
+  status     MarketStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  selections Selection[]
+
+  @@unique([matchId, type, line])
+  @@index([matchId, status])
+}
+
+model Selection {
+  id        String        @id @default(uuid()) @db.Uuid
+  marketId  String        @db.Uuid
+  market    Market        @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  key       String
+  label     String
+  source    OddsSource
+  odds      Decimal       @db.Decimal(8, 3)
+  isActive  Boolean       @default(true)
+  updatedAt DateTime      @updatedAt
+  history   OddsHistory[]
+
+  @@unique([marketId, key, source])
+  @@index([marketId, isActive])
+}
+
+model OddsHistory {
+  id           String     @id @default(uuid()) @db.Uuid
+  selectionId  String     @db.Uuid
+  selection    Selection  @relation(fields: [selectionId], references: [id], onDelete: Restrict)
+  source       OddsSource
+  previousOdds Decimal?   @db.Decimal(8, 3)
+  newOdds      Decimal    @db.Decimal(8, 3)
+  changedById  String?    @db.Uuid
+  createdAt    DateTime   @default(now())
+
+  @@index([selectionId, createdAt])
+}
+
+model ApiRequestBudget {
+  day       DateTime @id @db.Date
+  limit     Int
+  consumed  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
