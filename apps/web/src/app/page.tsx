@@ -5,8 +5,8 @@ export default function HomePage() {
     <main className="stack">
       <h1>Apuestas Deportivas</h1>
       <p className="muted">Consulta los partidos, estados, mercados y cuotas disponibles.</p>
-      <Link className="button" href="/partidos">
-        Ver partidos
+      <Link className="button" href="/apuestas">
+        Ver partidos y apostar
       </Link>
       <p className="muted">
         <Link href="/registro">Crear cuenta</Link>

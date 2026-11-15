@@ -142,6 +142,16 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       if (job) this.logger.error(`Falló la sincronización ${job.id}: ${error.message}`);
     });
     this.worker.on('error', (error) => this.logger.error(`Error del worker: ${error.message}`));
+    const utcDay = new Date().toISOString().slice(0, 10);
+    await this.queue.add(
+      'sync-fixtures',
+      {},
+      {
+        jobId: `startup-sync-${utcDay}`,
+        removeOnComplete: 100,
+        removeOnFail: 100,
+      },
+    );
     await this.schedule(this.scheduledIntervalMs);
     this.logger.log(
       'Sincronizador de API-Football habilitado; el presupuesto se reserva antes de cada petición.',

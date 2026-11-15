@@ -119,18 +119,16 @@ describe('Partidos y mercados (spec 3)', () => {
       );
   });
 
-  it('muestra próximos y en vivo por defecto, no partidos históricos finalizados', async () => {
+  it('muestra próximos y en vivo aunque no tengan cuotas, no partidos históricos finalizados', async () => {
     const upcomingId = await createMatch();
     const liveId = await createMatch();
+    const liveWithoutOddsId = await createMatch();
     const finishedId = await createMatch();
     const withoutOddsId = await createMatch();
     await Promise.all([upcomingId, liveId, finishedId].map(addExternalOdds));
-    await prisma.match.update({
-      where: { id: liveId },
-      data: {
-        kickoffAt: new Date('2026-11-13T20:00:00.000Z'),
-        status: DbMatchStatus.LIVE,
-      },
+    await prisma.match.updateMany({
+      where: { id: { in: [liveId, liveWithoutOddsId] } },
+      data: { kickoffAt: new Date('2026-11-13T20:00:00.000Z'), status: DbMatchStatus.LIVE },
     });
     await prisma.match.update({
       where: { id: finishedId },
@@ -144,6 +142,7 @@ describe('Partidos y mercados (spec 3)', () => {
     const ids = response.body.items.map((match: { id: string }) => match.id);
     expect(ids).toContain(upcomingId);
     expect(ids).toContain(liveId);
+    expect(ids).toContain(liveWithoutOddsId);
     expect(ids).not.toContain(finishedId);
     expect(ids).not.toContain(withoutOddsId);
   });
@@ -197,7 +196,7 @@ describe('Partidos y mercados (spec 3)', () => {
     ).toBe(true);
   });
 
-  it('solo ofrece competiciones y estados que tienen partidos con cuotas activas', async () => {
+  it('ofrece competiciones y estados disponibles, incluyendo partidos en vivo sin cuotas', async () => {
     const activeCompetition = await post(
       '/operator/competitions',
       { name: 'Liga con partidos', country: 'Ecuador' },
@@ -210,6 +209,10 @@ describe('Partidos y mercados (spec 3)', () => {
     ).expect(201);
     const upcomingId = await createMatch(operatorCookie, activeCompetition.body.id as string);
     const liveId = await createMatch(operatorCookie, activeCompetition.body.id as string);
+    const liveWithoutOddsId = await createMatch(
+      operatorCookie,
+      activeCompetition.body.id as string,
+    );
     await addExternalOdds(upcomingId);
     await addExternalOdds(liveId);
     await prisma.match.update({
@@ -223,6 +226,13 @@ describe('Partidos y mercados (spec 3)', () => {
         status: DbMatchStatus.LIVE,
       },
     });
+    await prisma.match.update({
+      where: { id: liveWithoutOddsId },
+      data: {
+        kickoffAt: new Date('2026-11-14T20:00:00.000Z'),
+        status: DbMatchStatus.LIVE,
+      },
+    });
     const noOddsId = await createMatch(operatorCookie, emptyCompetition.body.id as string);
     await prisma.match.update({
       where: { id: noOddsId },
@@ -231,12 +241,12 @@ describe('Partidos y mercados (spec 3)', () => {
 
     const filters = await request(app.getHttpServer()).get('/matches/filters').expect(200);
     expect(filters.body.competitions).toEqual([
-      expect.objectContaining({ id: activeCompetition.body.id, count: 2 }),
+      expect.objectContaining({ id: activeCompetition.body.id, count: 3 }),
     ]);
     expect(filters.body.statuses).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ value: PublicMatchStatus.SCHEDULED, count: 1 }),
-        expect.objectContaining({ value: PublicMatchStatus.LIVE, count: 1 }),
+        expect.objectContaining({ value: PublicMatchStatus.LIVE, count: 2 }),
       ]),
     );
     expect(filters.body.statuses).toHaveLength(2);

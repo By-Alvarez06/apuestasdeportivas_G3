@@ -822,6 +822,17 @@ export class MatchesService {
     filters: MatchFiltersDto,
     ignored?: 'competition' | 'status',
   ): Prisma.MatchWhereInput {
+    const activeMarket: Prisma.MatchWhereInput = {
+      markets: {
+        some: {
+          status: MarketStatus.OPEN,
+          selections: { some: { isActive: true } },
+        },
+      },
+    };
+    const includeLiveWithoutOdds =
+      ignored === 'status' || !filters.status || filters.status === PublicMatchStatus.LIVE;
+
     return {
       status:
         ignored === 'status' || !filters.status
@@ -829,15 +840,14 @@ export class MatchesService {
           : matchStatusToDatabase[filters.status],
       competitionId: ignored === 'competition' ? undefined : filters.competitionId,
       kickoffAt: this.kickoffFilter(filters),
-      ...(filters.from === undefined && filters.to === undefined
-        ? { OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }
-        : {}),
-      markets: {
-        some: {
-          status: MarketStatus.OPEN,
-          selections: { some: { isActive: true } },
-        },
-      },
+      AND: [
+        includeLiveWithoutOdds
+          ? { OR: [{ status: MatchStatus.LIVE }, activeMarket] }
+          : activeMarket,
+        ...(filters.from === undefined && filters.to === undefined
+          ? [{ OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }]
+          : []),
+      ],
     };
   }
 

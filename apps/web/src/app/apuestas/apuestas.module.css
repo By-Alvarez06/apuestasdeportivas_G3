@@ -33,6 +33,161 @@
   border-radius: var(--radius-field);
 }
 
+.selectedMatch {
+  border-color: var(--pitch);
+  box-shadow: 0 0 0 1px var(--pitch) inset;
+}
+
+.browser {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.browserHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.browserHeader h2,
+.browserHeader p {
+  margin: 0;
+}
+
+.browserHeader h2 {
+  font-size: var(--step-1);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.matchTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.matchTab {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.matchTab:hover,
+.matchTabActive {
+  border-color: var(--pitch);
+}
+
+.matchTabActive {
+  color: var(--chalk);
+  background: var(--pitch);
+}
+
+.fixtureList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fixtureGroup {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fixtureGroup > h3 {
+  margin: 0;
+  font-size: var(--step-0);
+}
+
+.liveHeading,
+.liveStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--card-red);
+  font-weight: 600;
+}
+
+.liveDot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 0.55rem;
+  border-radius: 50%;
+  background: var(--card-red);
+}
+
+.fixture {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.fixture:hover {
+  border-color: var(--pitch);
+  box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.fixture:focus-visible {
+  outline: 3px solid var(--pitch);
+  outline-offset: 3px;
+}
+
+.fixtureSelected {
+  border-color: var(--pitch);
+  box-shadow: 0 0 0 1px var(--pitch) inset;
+}
+
+.fixtureMeta {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.fixtureAction {
+  width: fit-content;
+  color: var(--pitch);
+  font-weight: 600;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
 .matchHead {
   display: grid;
   gap: 0.125rem;
