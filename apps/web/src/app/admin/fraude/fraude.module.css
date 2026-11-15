@@ -1,0 +1,99 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* Tarjeta roja para alertas altas, amarilla para medias, como las tarjetas del árbitro. */
+.alert {
+  display: grid;
+  gap: 0.375rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--card-yellow);
+  border-radius: var(--radius-field);
+}
+
+.alert[data-severity='HIGH'] {
+  border-left-color: var(--card-red);
+}
+
+.alert[data-status='DISMISSED'],
+.alert[data-status='CONFIRMED'] {
+  border-left-color: var(--line);
+}
+
+.alertHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.alertHead h2 {
+  font-size: var(--step-1);
+}
+
+.severity {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.resolution {
+  font-style: italic;
+}
+
+.alert :global(.button-quiet) {
+  justify-self: start;
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+}
+
+.resolve {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.resolve textarea {
+  font: inherit;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.check input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--card-red);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}

@@ -48,6 +48,7 @@ const NAV: { href: string; label: string; roles: UserRole[] }[] = [
   },
   { href: '/admin/usuarios', label: 'Usuarios', roles: [UserRole.ADMIN] },
   { href: '/admin/retiros', label: 'Retiros', roles: [UserRole.ADMIN] },
+  { href: '/admin/fraude', label: 'Fraude', roles: [UserRole.ADMIN] },
   { href: '/admin/auditoria', label: 'Auditoría', roles: [UserRole.ADMIN] },
   {
     href: '/cuenta/seguridad',

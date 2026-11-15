@@ -196,3 +196,23 @@ test('canjea una apuesta gratis y la usa sin tocar su saldo', async ({ page }) =
   // No se descontó nada del saldo.
   await expect(page.getByRole('link', { name: /Saldo disponible/ })).toHaveText(/\$25\.00/);
 });
+
+test('el administrador abre la bandeja de alertas de fraude; un apostador no', async ({
+  browser,
+  page,
+}) => {
+  const adminContext = await browser.newContext({ storageState: await operator.storageState() });
+  const adminPage = await adminContext.newPage();
+  await adminPage.goto('/admin/fraude');
+  await expect(adminPage.getByRole('heading', { name: 'Alertas de fraude' })).toBeVisible();
+  await expect(adminPage.getByLabel('Estado')).toHaveValue('OPEN');
+  await adminPage.getByLabel('Tipo').selectOption('RESETTLEMENT_DEBT');
+  await expect(
+    adminPage.getByText(/No hay alertas con estos filtros|alerta/).first(),
+  ).toBeVisible();
+  await adminContext.close();
+
+  await newBettorWith25(page);
+  await page.goto('/admin/fraude');
+  await expect(page.getByText('No tienes acceso a esta sección.')).toBeVisible();
+});

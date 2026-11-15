@@ -260,7 +260,7 @@ correcta; la actividad normal no genera alertas.
 
 🔖 Commit: `feat(api): detección de fraude con alertas para administradores`
 
-- [ ] T067 [US6] Crear la página `/admin/fraude` (bandeja filtrable por estado y regla, detalle con evidencia y cuentas enlazadas, resolver con motivo y opción de suspender) en `apps/web/src/app/admin/fraude/page.tsx` y enlazarla en el menú de administración
+- [X] T067 [US6] Crear la página `/admin/fraude` (bandeja filtrable por estado y regla, detalle con evidencia y cuentas enlazadas, resolver con motivo y opción de suspender) en `apps/web/src/app/admin/fraude/page.tsx` y enlazarla en el menú de administración
 
 🔖 Commit: `feat(web): bandeja de alertas de fraude`
 
