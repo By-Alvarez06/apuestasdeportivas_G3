@@ -39,6 +39,22 @@ test.afterAll(async () => {
   await operator.dispose();
 });
 
+/**
+ * Abre las cuotas de un partido del catálogo simulado (m1…m5). La cartelera lista los partidos
+ * reales de la spec 3; con el simulado se entra por `?matchId=`. Si ya estamos en /apuestas se
+ * cambia de partido sin recargar (como al tocar otra tarjeta), así el boleto conserva lo elegido.
+ */
+async function openMatch(page: Page, matchId: string): Promise<void> {
+  if (new URL(page.url()).pathname === '/apuestas') {
+    await page.evaluate((id) => {
+      history.pushState(null, '', `/apuestas?matchId=${id}`);
+      dispatchEvent(new PopStateEvent('popstate'));
+    }, matchId);
+  } else {
+    await page.goto(`/apuestas?matchId=${matchId}`);
+  }
+}
+
 /** Registra, verifica, inicia sesión y deposita 25.00 con el Payphone simulado. */
 async function newBettorWith25(page: Page): Promise<void> {
   const email = `bet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
@@ -70,7 +86,7 @@ test('el apostador ve su apuesta ganada y su saldo nuevo sin recargar', async ({
   await newBettorWith25(page);
 
   // Apostar 10.00 a Barcelona SC (2.10).
-  await page.goto('/apuestas');
+  await openMatch(page, 'm1');
   await page.getByRole('button', { name: /Barcelona SC\s*2\.10/ }).click();
   await page.getByRole('button', { name: 'Confirmar apuesta de $10.00' }).click();
   await expect(page.getByText(/Apuesta aceptada: \$10\.00 a cuota 2\.10/)).toBeVisible();
@@ -108,15 +124,17 @@ test('arma una combinada: suma partidos, reemplaza el del mismo partido y la con
   page,
 }) => {
   await newBettorWith25(page);
-  await page.goto('/apuestas');
 
+  await openMatch(page, 'm4');
   await page.getByRole('button', { name: /Orense\s*2\.00/ }).click();
+  await openMatch(page, 'm5');
   await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
   const slip = page.getByRole('complementary', { name: 'Tu boleto' });
   await expect(slip.getByText('Combinada de 2')).toBeVisible();
   await expect(slip.getByText('Cuota total')).toContainText('3.60');
 
   // Otra cuota del mismo partido reemplaza a la anterior.
+  await openMatch(page, 'm4');
   await page.getByRole('button', { name: /Delfín\s*3\.60/ }).click();
   await expect(page.getByText(/Cambiamos Orense por Delfín/)).toBeVisible();
   await expect(slip.getByText('Cuota total')).toContainText('6.48');
@@ -132,7 +150,7 @@ test('arma una combinada: suma partidos, reemplaza el del mismo partido y la con
 
 test('una apuesta sobre un partido suspendido se ve en espera con su plazo', async ({ page }) => {
   await newBettorWith25(page);
-  await page.goto('/apuestas');
+  await openMatch(page, 'm5');
   await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
   await page.getByRole('button', { name: 'Confirmar apuesta de $10.00' }).click();
   await expect(page.getByText(/Apuesta aceptada/)).toBeVisible();
@@ -186,10 +204,14 @@ test('canjea una apuesta gratis y la usa sin tocar su saldo', async ({ page }) =
   await page.goto('/promociones');
   await page.getByLabel('Código de promoción').fill(code.toLowerCase());
   await page.getByRole('button', { name: 'Canjear código' }).click();
-  await expect(page.getByText(/Tu apuesta gratis ya está disponible/)).toBeVisible();
+  // El canje bloquea el cupón, encola la revisión de fraude y recarga las promociones: con el
+  // servidor de desarrollo cargado puede pasar de los 5 s por defecto.
+  await expect(page.getByText(/Tu apuesta gratis ya está disponible/)).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByText('Apuesta gratis de $5.00')).toBeVisible();
 
-  await page.goto('/apuestas');
+  await openMatch(page, 'm4');
   await page.getByRole('button', { name: /Orense\s*2\.00/ }).click();
   const slip = page.getByRole('complementary', { name: 'Tu boleto' });
   await slip.getByLabel(/Apuesta gratis \$5\.00/).check();
@@ -229,9 +251,9 @@ test('las pantallas de la spec 4 se usan a 360 px y todos sus controles tienen n
   test.setTimeout(120_000);
 
   /** Sin scroll horizontal y sin botones, enlaces ni campos sin nombre accesible. */
-  async function check(p: Page, path: string) {
+  async function check(p: Page, path: string, { navigate = true } = {}) {
     await p.setViewportSize({ width: 360, height: 740 });
-    await p.goto(path);
+    if (navigate) await p.goto(path);
     await expect(p.getByRole('heading', { level: 1 })).toBeVisible();
     const overflow = await p.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -255,9 +277,13 @@ test('las pantallas de la spec 4 se usan a 360 px y todos sus controles tienen n
   }
 
   await newBettorWith25(page);
-  await page.goto('/apuestas');
+  for (const path of ['/apuestas', '/apuestas?matchId=m5', '/mis-apuestas', '/promociones'])
+    await check(page, path);
+  // Con el boleto abierto (el panel más denso) tampoco hay scroll horizontal.
+  await openMatch(page, 'm5');
   await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
-  for (const path of ['/apuestas', '/mis-apuestas', '/promociones']) await check(page, path);
+  await expect(page.getByRole('button', { name: /Confirmar apuesta de/ })).toBeVisible();
+  await check(page, '/apuestas?matchId=m5 con boleto', { navigate: false });
 
   const adminContext = await browser.newContext({ storageState: await operator.storageState() });
   const adminPage = await adminContext.newPage();
