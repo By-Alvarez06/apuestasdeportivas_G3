@@ -31,6 +31,10 @@ Notas que no se deducen del código:
 - `@nestjs/config`, `@nestjs/jwt`, `@nestjs/schedule`, `@nestjs/bullmq` (^11) y `otplib` están fijados en versiones CommonJS: las siguientes son solo ESM y Jest no las carga.
 - Las pruebas de integración necesitan Redis además de PostgreSQL; cada corrida usa su propio prefijo de BullMQ (`test-<pid>`) y `drainQueues()` de `apps/api/test/setup.ts` vacía las colas.
 - Todo movimiento de dinero pasa por `WalletService` (`apps/api/src/wallet`, contrato en `specs/002-cuentas-billetera/contracts/wallet-service.md`); ningún otro módulo escribe en las tablas del libro contable.
+- Spec 4: la API lee partidos y cuotas solo a través de `MatchCatalogPort` y recibe resultados por la cola BullMQ `match-events` (contrato en `specs/004-apuestas-liquidacion/contracts/match-catalog.md`). Con `CATALOG_MODE=database` (por defecto) lo implementa `PrismaMatchCatalog` sobre los partidos de la spec 3. Con `CATALOG_MODE=simulated` (solo fuera de producción) se usa el catálogo en memoria de `apps/api/src/catalog/simulated`, con 5 partidos fijos y endpoints `/dev/catalog/*` para publicar resultados: lo usan las pruebas de integración y la E2E de apuestas, así que el `.env` local para correrlas lleva `CATALOG_MODE=simulated`.
+- Cuotas en centésimas (`2.10` → 210) y montos en centavos; el cálculo de pagos vive en `packages/shared/src/odds.ts` (BigInt, redondeo hacia abajo) y lo usan la API y la web, pero solo la API decide.
+- Procesos periódicos de la API (`@nestjs/schedule`): cada minuto vencen los partidos en espera, se cobran las deudas por re-liquidación y se conceden/cierran bonos; cada 5 minutos corre el barrido de fraude. Las pruebas los invocan directamente (`HoldsService.expireHolds`, `DebtService.collect`, `BonusService.*`, `FraudService.sweep`).
+- La E2E web de apuestas (`apps/web/e2e/betting.spec.ts`) inicia sesión con `ADMIN_EMAIL`/`ADMIN_PASSWORD` del `.env` para publicar resultados con el catálogo simulado.
 
 ## Arquitectura prevista
 
