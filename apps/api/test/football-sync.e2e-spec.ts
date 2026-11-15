@@ -120,8 +120,10 @@ describe('Sincronización de partidos de API-Football', () => {
       },
     ]);
     try {
-      await sync.syncDate('2027-01-20');
-      await sync.syncDate('2027-01-20');
+      const first = await sync.syncDate('2027-01-20');
+      const second = await sync.syncDate('2027-01-20');
+      expect(first.oddsError).toBeNull();
+      expect(second.oddsError).toBeNull();
 
       const market = await prisma.market.findFirstOrThrow({
         where: { match: { apiFootballId: fixture.fixtureId }, type: MarketType.RESULT_1X2 },
@@ -138,6 +140,50 @@ describe('Sincronización de partidos de API-Football', () => {
       expect(selection.odds.toFixed(3)).toBe('2.500');
       expect(await prisma.oddsHistory.count({ where: { selectionId: selection.id } })).toBe(1);
       expect(oddsRequest).toHaveBeenCalledTimes(2);
+    } finally {
+      oddsRequest.mockRestore();
+      configGet.mockRestore();
+    }
+  });
+
+  it('evita crear mercados duplicados si dos sincronizaciones guardan la misma cuota a la vez', async () => {
+    const configGet = jest.spyOn(app.get(ConfigService), 'get').mockImplementation((key) => {
+      if (key === 'API_FOOTBALL_BOOKMAKER_ID') return '123';
+      return undefined;
+    });
+    const oddsRequest = jest.spyOn(app.get(ApiFootballClient), 'oddsForDate').mockResolvedValue([
+      {
+        fixtureId: fixture.fixtureId,
+        odds: [
+          {
+            type: MarketType.RESULT_1X2,
+            line: null,
+            selection: 'HOME',
+            odds: '2.500',
+          },
+        ],
+      },
+    ]);
+    try {
+      await sync.syncDate('2027-01-20');
+      await Promise.all([sync.syncDate('2027-01-20'), sync.syncDate('2027-01-20')]);
+
+      const match = await prisma.match.findUniqueOrThrow({
+        where: { apiFootballId: fixture.fixtureId },
+      });
+      const market = await prisma.market.findMany({
+        where: { matchId: match.id, type: MarketType.RESULT_1X2 },
+      });
+      expect(market).toHaveLength(1);
+      expect(
+        await prisma.selection.count({
+          where: {
+            marketId: market[0].id,
+            key: 'HOME',
+            source: OddsSource.API_FOOTBALL,
+          },
+        }),
+      ).toBe(1);
     } finally {
       oddsRequest.mockRestore();
       configGet.mockRestore();

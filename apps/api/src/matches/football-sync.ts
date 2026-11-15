@@ -400,6 +400,9 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       if (!outcome) continue;
 
       const changed = await this.prisma.$transaction(async (tx) => {
+        const marketLockKey = `${matchId}:${odd.type}:${odd.line ?? 'null'}`;
+        await tx.$queryRaw`
+          SELECT pg_advisory_xact_lock(hashtextextended(${marketLockKey}, 0))::text`;
         const market = await tx.market.findFirst({
           where: {
             matchId,
