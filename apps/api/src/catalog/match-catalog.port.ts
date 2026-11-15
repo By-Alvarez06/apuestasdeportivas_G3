@@ -1,9 +1,7 @@
 /**
- * Lo que la spec 4 necesita de la spec 3 (partidos y mercados).
- * Contrato: specs/004-apuestas-liquidacion/contracts/match-catalog.md.
- *
- * Mientras la spec 3 no exista lo implementa SimulatedCatalog. La spec 3 debe proveer el token
- * MATCH_CATALOG, producir los eventos en la cola `match-events` y pasar `testing/catalog-contract.ts`.
+ * Contrato entre partidos y mercados (spec 3) y apuestas/liquidación (spec 4).
+ * La implementación persistente es PrismaMatchCatalog; el simulador se reserva para pruebas.
+ * Ver specs/004-apuestas-liquidacion/contracts/match-catalog.md.
  */
 
 /** Token de inyección del catálogo. */
@@ -58,7 +56,7 @@ export interface MatchCatalogPort {
   /** Cambios de cuota de una selección entre dos instantes (regla ODDS_DROP_PATTERN). */
   oddsHistory(selectionId: string, from: Date, to: Date): Promise<OddsPoint[]>;
 
-  /** Partidos no terminados con al menos un mercado abierto (pantalla de apuestas). */
+  /** Hasta 20 partidos con cuotas abiertas y vigentes (pantalla de apuestas). */
   listOpenMatches(): Promise<CatalogMatch[]>;
 }
 

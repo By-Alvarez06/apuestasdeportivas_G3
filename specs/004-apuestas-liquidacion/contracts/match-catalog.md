@@ -1,9 +1,10 @@
 # Contrato con la spec 3: catálogo de partidos y eventos de resultado
 
-Lo que la spec 4 necesita de la spec 3. Mientras la spec 3 no exista, lo implementa
-`SimulatedCatalogModule` (`apps/api/src/catalog/simulated`). La spec 3 debe proveer un módulo que
-exporte el token `MATCH_CATALOG` y producir los eventos en la cola `match-events`, y pasar la suite
-`apps/api/src/catalog/testing/catalog-contract.ts`.
+Contrato entre la spec 3 (partidos y mercados) y la spec 4 (apuestas y liquidación).
+`PrismaMatchCatalog` (`apps/api/src/catalog/prisma-match-catalog.ts`) implementa el catálogo
+persistente y `MatchEventPublisher` registra y publica resultados y cambios de estado en
+`match-events`. `SimulatedCatalog` queda disponible solo para pruebas o desarrollo explícito
+(`CATALOG_MODE=simulated`); la configuración normal usa `CATALOG_MODE=database`.
 
 ## 1. Puerto síncrono `MatchCatalogPort`
 

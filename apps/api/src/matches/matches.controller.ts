@@ -22,8 +22,14 @@ export class MatchesController {
 
   @Public()
   @Get('competitions')
-  listCompetitions() {
-    return this.matches.listCompetitions();
+  async listCompetitions(@Query() filters: MatchFiltersDto) {
+    return (await this.matches.listPublicFilters(filters)).competitions;
+  }
+
+  @Public()
+  @Get('filters')
+  listFilters(@Query() filters: MatchFiltersDto) {
+    return this.matches.listPublicFilters(filters);
   }
 
   @Public()

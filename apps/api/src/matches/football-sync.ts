@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { MarketStatus, MarketType, MatchStatus, OddsSource } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { MatchEventJob } from '../catalog/match-catalog.port';
 import {
   ApiFootballClient,
   ApiFootballPermissionError,
@@ -19,6 +20,11 @@ import {
   FootballBudgetService,
 } from './football-budget';
 import { marketOutcomes } from './market-outcomes';
+import {
+  createMarketResultEvents,
+  createMatchStatusEvent,
+  MatchEventPublisher,
+} from './match-event.publisher';
 
 const QUEUE_NAME = 'api-football-fixtures';
 const SCHEDULER_ID = 'daily-fixture-sync';
@@ -90,6 +96,7 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
     private readonly client: ApiFootballClient,
     private readonly budget: FootballBudgetService,
     private readonly audit: AuditService,
+    private readonly matchEvents: MatchEventPublisher,
   ) {
     this.liveIntervalMs = this.readInterval(
       'API_FOOTBALL_LIVE_INTERVAL_MS',
@@ -283,10 +290,38 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
             tx,
           );
         }
-        return { saved, changed };
+        const events: MatchEventJob[] = [];
+        const scoreChanged =
+          existing?.homeScore !== fixture.homeScore || existing?.awayScore !== fixture.awayScore;
+        if (
+          status === MatchStatus.FINISHED &&
+          fixture.homeScore !== null &&
+          fixture.awayScore !== null &&
+          (existing?.status !== MatchStatus.FINISHED || scoreChanged)
+        ) {
+          const markets = await tx.market.findMany({
+            where: { matchId: saved.id },
+            include: { selections: { select: { id: true, key: true } } },
+          });
+          events.push(
+            ...createMarketResultEvents(
+              saved.id,
+              markets,
+              fixture.homeScore,
+              fixture.awayScore,
+              existing?.status === MatchStatus.FINISHED,
+            ),
+          );
+        }
+        if (existing && existing.status !== status) {
+          events.push(createMatchStatusEvent(saved.id, status, fixture.kickoffAt));
+        }
+        if (events.length > 0) await this.matchEvents.stage(tx, events);
+        return { saved, changed, hasEvents: events.length > 0 };
       });
       if (match.changed) imported += 1;
       else unchanged += 1;
+      if (match.hasEvents) await this.matchEvents.dispatchPending();
       if (bookmakerId && isLiveEligible(status)) oddsMatches.set(fixture.fixtureId, match.saved.id);
     }
 

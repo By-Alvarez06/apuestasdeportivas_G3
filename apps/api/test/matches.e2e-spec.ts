@@ -50,13 +50,14 @@ describe('Partidos y mercados (spec 3)', () => {
       .set('Cookie', cookie)
       .send(body);
 
-  async function createMatch(cookie = operatorCookie): Promise<string> {
+  async function createMatch(cookie = operatorCookie, competitionId?: string): Promise<string> {
     const response = await post(
       '/operator/matches',
       {
         homeTeamName: 'Quito FC',
         awayTeamName: 'Cuenca SC',
         kickoffAt: '2027-01-20T20:00:00.000Z',
+        ...(competitionId ? { competitionId } : {}),
       },
       cookie,
     ).expect(201);
@@ -97,17 +98,23 @@ describe('Partidos y mercados (spec 3)', () => {
   });
 
   it('publica competiciones para filtrar la cartelera sin iniciar sesión', async () => {
-    await post(
+    const competition = await post(
       '/operator/competitions',
       { name: 'Liga de Prueba', country: 'Ecuador' },
       operatorCookie,
     ).expect(201);
+    const matchId = await createMatch(operatorCookie, competition.body.id as string);
+    await addExternalOdds(matchId);
+    await prisma.match.update({
+      where: { id: matchId },
+      data: { kickoffAt: new Date('2099-01-20T20:00:00.000Z') },
+    });
     await request(app.getHttpServer())
       .get('/matches/competitions')
       .expect(200)
       .expect(({ body }) =>
         expect(body).toEqual([
-          expect.objectContaining({ name: 'Liga de Prueba', country: 'Ecuador' }),
+          expect.objectContaining({ name: 'Liga de Prueba', country: 'Ecuador', count: 1 }),
         ]),
       );
   });
@@ -155,6 +162,7 @@ describe('Partidos y mercados (spec 3)', () => {
         status: MarketStatus.CLOSED,
       },
     });
+
     await prisma.selection.create({
       data: {
         marketId: closedMarket.id,
@@ -165,9 +173,7 @@ describe('Partidos y mercados (spec 3)', () => {
       },
     });
 
-    const response = await request(app.getHttpServer())
-      .get('/matches?pageSize=100')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/matches?pageSize=100').expect(200);
 
     expect(response.body).toMatchObject({ total: 21, pageSize: 20 });
     expect(response.body.items).toHaveLength(20);
@@ -180,14 +186,60 @@ describe('Partidos y mercados (spec 3)', () => {
           }[];
         }) =>
           match.markets.length > 0 &&
-          match.markets.every((market) =>
-            market.status === PublicMarketStatus.OPEN &&
-            market.selections.every(
-              (selection) => selection.source === 'API_FOOTBALL' && selection.isActive,
-            ),
+          match.markets.every(
+            (market) =>
+              market.status === PublicMarketStatus.OPEN &&
+              market.selections.every(
+                (selection) => selection.source === 'API_FOOTBALL' && selection.isActive,
+              ),
           ),
       ),
     ).toBe(true);
+  });
+
+  it('solo ofrece competiciones y estados que tienen partidos con cuotas activas', async () => {
+    const activeCompetition = await post(
+      '/operator/competitions',
+      { name: 'Liga con partidos', country: 'Ecuador' },
+      operatorCookie,
+    ).expect(201);
+    const emptyCompetition = await post(
+      '/operator/competitions',
+      { name: 'Liga sin partidos', country: 'Ecuador' },
+      operatorCookie,
+    ).expect(201);
+    const upcomingId = await createMatch(operatorCookie, activeCompetition.body.id as string);
+    const liveId = await createMatch(operatorCookie, activeCompetition.body.id as string);
+    await addExternalOdds(upcomingId);
+    await addExternalOdds(liveId);
+    await prisma.match.update({
+      where: { id: upcomingId },
+      data: { kickoffAt: new Date('2099-01-20T20:00:00.000Z') },
+    });
+    await prisma.match.update({
+      where: { id: liveId },
+      data: {
+        kickoffAt: new Date('2026-11-13T20:00:00.000Z'),
+        status: DbMatchStatus.LIVE,
+      },
+    });
+    const noOddsId = await createMatch(operatorCookie, emptyCompetition.body.id as string);
+    await prisma.match.update({
+      where: { id: noOddsId },
+      data: { kickoffAt: new Date('2099-01-20T21:00:00.000Z') },
+    });
+
+    const filters = await request(app.getHttpServer()).get('/matches/filters').expect(200);
+    expect(filters.body.competitions).toEqual([
+      expect.objectContaining({ id: activeCompetition.body.id, count: 2 }),
+    ]);
+    expect(filters.body.statuses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: PublicMatchStatus.SCHEDULED, count: 1 }),
+        expect.objectContaining({ value: PublicMatchStatus.LIVE, count: 1 }),
+      ]),
+    );
+    expect(filters.body.statuses).toHaveLength(2);
   });
 
   async function createResultMarket(matchId: string): Promise<string> {
@@ -205,6 +257,25 @@ describe('Partidos y mercados (spec 3)', () => {
     ).expect(201);
     return response.body.id as string;
   }
+
+  it('incluye en la cartelera los mercados abiertos con cuotas manuales', async () => {
+    const matchId = await createMatch();
+    await createResultMarket(matchId);
+
+    const response = await request(app.getHttpServer()).get('/matches').expect(200);
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        id: matchId,
+        markets: [
+          expect.objectContaining({
+            selections: expect.arrayContaining([
+              expect.objectContaining({ source: OddsSource.MANUAL, isActive: true }),
+            ]),
+          }),
+        ],
+      }),
+    ]);
+  });
 
   it('publica partidos y solo las cuotas manuales vigentes cuando existe una externa', async () => {
     const matchId = await createMatch();
@@ -349,6 +420,25 @@ describe('Partidos y mercados (spec 3)', () => {
       },
       adminCookie,
     ).expect(200);
+    const resultEvents = await prisma.matchEvent.findMany({
+      where: { matchId },
+      orderBy: { receivedAt: 'asc' },
+    });
+    expect(resultEvents.map(({ type }) => type)).toEqual([
+      'MATCH_STATUS_CHANGED',
+      'MARKET_RESULTED',
+      'MATCH_STATUS_CHANGED',
+    ]);
+    expect(
+      (resultEvents[1]!.payload as { results: Record<string, string> }).results[
+        (
+          await prisma.selection.findFirstOrThrow({
+            where: { marketId, key: 'HOME', source: OddsSource.MANUAL },
+            select: { id: true },
+          })
+        ).id
+      ],
+    ).toBe('WON');
     expect(
       await prisma.market.findUniqueOrThrow({ where: { id: marketId }, select: { status: true } }),
     ).toEqual({ status: MarketStatus.CLOSED });

@@ -13,6 +13,12 @@ import { type RequestMeta } from '../common/request-meta';
 import { MarketStatus, MarketType, MatchStatus, OddsSource, Role } from '../generated/prisma/enums';
 import { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { MatchEventJob } from '../catalog/match-catalog.port';
+import {
+  createMarketResultEvents,
+  createMatchStatusEvent,
+  MatchEventPublisher,
+} from './match-event.publisher';
 import {
   assertDecimalOdds,
   assertMarketLine,
@@ -113,29 +119,12 @@ export class MatchesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly matchEvents: MatchEventPublisher,
   ) {}
 
   async listPublic(filters: MatchFiltersDto) {
     this.validateDateRange(filters);
-    const where: Prisma.MatchWhereInput = {
-      status:
-        filters.status && filters.status !== PublicMatchStatus.CANCELLED
-          ? matchStatusToDatabase[filters.status]
-          : { not: MatchStatus.CANCELLED },
-      competitionId: filters.competitionId,
-      kickoffAt: this.kickoffFilter(filters),
-      ...(filters.from === undefined && filters.to === undefined
-        ? { OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }
-        : {}),
-      markets: {
-        some: {
-          status: MarketStatus.OPEN,
-          selections: {
-            some: { source: OddsSource.API_FOOTBALL, isActive: true },
-          },
-        },
-      },
-    };
+    const where = this.publicWhere(filters);
     const pageSize = Math.min(filters.pageSize, 20);
     const total = await this.prisma.match.count({ where });
     const rows = await this.prisma.match.findMany({
@@ -212,6 +201,43 @@ export class MatchesService {
       select: { id: true, name: true, country: true },
       orderBy: [{ name: 'asc' }, { country: 'asc' }],
     });
+  }
+
+  async listPublicFilters(filters: MatchFiltersDto) {
+    this.validateDateRange(filters);
+    const competitionsWhere = this.publicWhere(filters, 'competition');
+    const statusesWhere = this.publicWhere(filters, 'status');
+    const [competitions, groupedStatuses] = await Promise.all([
+      this.prisma.competition.findMany({
+        where: { matches: { some: competitionsWhere } },
+        select: {
+          id: true,
+          name: true,
+          country: true,
+          _count: { select: { matches: { where: competitionsWhere } } },
+        },
+        orderBy: [{ name: 'asc' }, { country: 'asc' }],
+      }),
+      this.prisma.match.groupBy({
+        by: ['status'],
+        where: statusesWhere,
+        _count: { _all: true },
+      }),
+    ]);
+
+    return {
+      competitions: competitions.map(({ _count, ...competition }) => ({
+        ...competition,
+        count: _count.matches,
+      })),
+      statuses: groupedStatuses
+        .filter(({ status }) => status === MatchStatus.SCHEDULED || status === MatchStatus.LIVE)
+        .map(({ status, _count }) => ({
+          value: matchStatusToPublic[status],
+          label: status === MatchStatus.LIVE ? 'En vivo' : 'Programado',
+          count: _count._all,
+        })),
+    };
   }
 
   async createCompetition(actorId: string, dto: CreateCompetitionDto, meta: RequestMeta) {
@@ -407,10 +433,12 @@ export class MatchesService {
       this.assertScore(dto.homeScore, dto.awayScore);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const current = await this.lockMatch(id, tx);
       const next = matchStatusToDatabase[dto.status];
       this.assertTransition(current.status, next, role, dto.reason);
+      const homeScore = dto.homeScore ?? current.homeScore;
+      const awayScore = dto.awayScore ?? current.awayScore;
       await tx.match.update({
         where: { id },
         data: {
@@ -435,6 +463,33 @@ export class MatchesService {
           data: { status: MarketStatus.CLOSED },
         });
       }
+      const events: MatchEventJob[] = [];
+      if (
+        next === MatchStatus.FINISHED &&
+        homeScore !== null &&
+        awayScore !== null &&
+        (current.status !== next ||
+          current.homeScore !== homeScore ||
+          current.awayScore !== awayScore)
+      ) {
+        const markets = await tx.market.findMany({
+          where: { matchId: id },
+          include: { selections: { select: { id: true, key: true } } },
+        });
+        events.push(
+          ...createMarketResultEvents(
+            id,
+            markets,
+            homeScore,
+            awayScore,
+            current.status === MatchStatus.FINISHED,
+          ),
+        );
+      }
+      if (current.status !== next) {
+        events.push(createMatchStatusEvent(id, next, current.kickoffAt));
+      }
+      if (events.length > 0) await this.matchEvents.stage(tx, events);
       await this.audit.record(
         {
           actorId,
@@ -457,6 +512,8 @@ export class MatchesService {
         true,
       );
     });
+    await this.matchEvents.dispatchPending();
+    return updated;
   }
 
   async createMarket(actorId: string, matchId: string, dto: CreateMarketDto, meta: RequestMeta) {
@@ -759,6 +816,29 @@ export class MatchesService {
     if (filters.from && filters.to && new Date(filters.from) > new Date(filters.to)) {
       throw validationError('La fecha inicial debe ser anterior a la fecha final.');
     }
+  }
+
+  private publicWhere(
+    filters: MatchFiltersDto,
+    ignored?: 'competition' | 'status',
+  ): Prisma.MatchWhereInput {
+    return {
+      status:
+        ignored === 'status' || !filters.status
+          ? { in: [MatchStatus.SCHEDULED, MatchStatus.LIVE] }
+          : matchStatusToDatabase[filters.status],
+      competitionId: ignored === 'competition' ? undefined : filters.competitionId,
+      kickoffAt: this.kickoffFilter(filters),
+      ...(filters.from === undefined && filters.to === undefined
+        ? { OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }
+        : {}),
+      markets: {
+        some: {
+          status: MarketStatus.OPEN,
+          selections: { some: { isActive: true } },
+        },
+      },
+    };
   }
 
   private kickoffFilter(filters: MatchFiltersDto): Prisma.DateTimeFilter | undefined {

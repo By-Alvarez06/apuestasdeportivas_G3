@@ -27,6 +27,44 @@ export function marketOutcomes(type: MarketType) {
   return outcomes[type];
 }
 
+export type MarketSelectionResult = 'WON' | 'LOST' | 'VOID';
+
+export function resolveMarketOutcomes(
+  type: MarketType,
+  line: number | null,
+  homeScore: number,
+  awayScore: number,
+  selectionKeys: { id: string; key: string }[],
+): Record<string, MarketSelectionResult> {
+  const total = homeScore + awayScore;
+  const homeWon = homeScore > awayScore;
+  const draw = homeScore === awayScore;
+  const known: Record<string, MarketSelectionResult> =
+    type === MarketType.RESULT_1X2
+      ? {
+          HOME: homeWon ? 'WON' : 'LOST',
+          DRAW: draw ? 'WON' : 'LOST',
+          AWAY: !homeWon && !draw ? 'WON' : 'LOST',
+        }
+      : type === MarketType.DOUBLE_CHANCE
+        ? {
+            HOME_OR_DRAW: homeWon || draw ? 'WON' : 'LOST',
+            HOME_OR_AWAY: draw ? 'LOST' : 'WON',
+            DRAW_OR_AWAY: !homeWon ? 'WON' : 'LOST',
+          }
+        : type === MarketType.TOTAL_GOALS
+          ? {
+              OVER: line === null || total === line ? 'VOID' : total > line ? 'WON' : 'LOST',
+              UNDER: line === null || total === line ? 'VOID' : total < line ? 'WON' : 'LOST',
+            }
+          : {
+              YES: homeScore > 0 && awayScore > 0 ? 'WON' : 'LOST',
+              NO: homeScore === 0 || awayScore === 0 ? 'WON' : 'LOST',
+            };
+
+  return Object.fromEntries(selectionKeys.map(({ id, key }) => [id, known[key] ?? 'VOID']));
+}
+
 export function assertMarketOutcomes(type: MarketType, keys: string[]): void {
   const expected = outcomes[type].map(({ key }) => key).sort();
   const actual = [...keys].sort();

@@ -1,27 +1,28 @@
 import { Module } from '@nestjs/common';
 import { CatalogController } from './catalog.controller';
 import { MATCH_CATALOG } from './match-catalog.port';
+import { MatchesModule } from '../matches/matches.module';
+import { PrismaMatchCatalog } from './prisma-match-catalog';
 import { DevCatalogController, DevOnlyGuard } from './simulated/dev-catalog.controller';
 import { SimulatedCatalog } from './simulated/simulated-catalog';
 
-/**
- * Catálogo de partidos para la spec 4 (research R2). Con `CATALOG_MODE=simulated` (único modo
- * mientras no exista la spec 3) provee el catálogo en memoria. Al integrar la spec 3, su módulo
- * proveerá MATCH_CATALOG y se borrará la carpeta `simulated/`.
- */
 @Module({
+  imports: [MatchesModule],
   providers: [
+    PrismaMatchCatalog,
     { provide: SimulatedCatalog, useFactory: () => new SimulatedCatalog() },
     DevOnlyGuard,
     {
       provide: MATCH_CATALOG,
-      useFactory: (simulated: SimulatedCatalog) => {
-        const mode = process.env.CATALOG_MODE ?? 'simulated';
-        if (mode !== 'simulated')
-          throw new Error(`CATALOG_MODE=${mode} no está disponible: la spec 3 aún no existe.`);
-        return simulated;
+      useFactory: (database: PrismaMatchCatalog, simulated: SimulatedCatalog) => {
+        const mode = process.env.CATALOG_MODE ?? 'database';
+        if (mode === 'database') return database;
+        if (mode === 'simulated' && process.env.NODE_ENV !== 'production') return simulated;
+        if (mode === 'simulated')
+          throw new Error('El catálogo simulado no está permitido en producción.');
+        throw new Error(`CATALOG_MODE=${mode} no es válido; usa database o simulated.`);
       },
-      inject: [SimulatedCatalog],
+      inject: [PrismaMatchCatalog, SimulatedCatalog],
     },
   ],
   controllers: [CatalogController, DevCatalogController],

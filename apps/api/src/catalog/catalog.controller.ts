@@ -4,10 +4,7 @@ import { Roles } from '../common/auth/decorators';
 import { Role } from '../generated/prisma/enums';
 import { MATCH_CATALOG, type MatchCatalogPort } from './match-catalog.port';
 
-/**
- * Listado provisional de partidos para la pantalla de apuestas (contracts/http-api.md § Catálogo).
- * Lo reemplazará el listado de la spec 3.
- */
+/** Listado de partidos con cuotas vigentes para la pantalla de apuestas. */
 @Roles(Role.BETTOR, Role.OPERATOR, Role.ADMIN)
 @Controller('catalog')
 export class CatalogController {
