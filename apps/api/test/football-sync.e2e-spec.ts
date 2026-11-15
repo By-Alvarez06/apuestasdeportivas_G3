@@ -166,6 +166,11 @@ describe('Sincronización de partidos de API-Football', () => {
 
   it('no envía solicitudes al proveedor si no se ha configurado un presupuesto diario', async () => {
     fixtureRequest.mockRestore();
+    const configGet = jest.spyOn(app.get(ConfigService), 'get').mockImplementation((key) => {
+      if (key === 'API_FOOTBALL_KEY') return 'test-key';
+      if (key === 'API_FOOTBALL_BASE_URL') return 'https://v3.football.api-sports.io';
+      return undefined;
+    });
     const fetch = jest.spyOn(global, 'fetch');
     try {
       await expect(app.get(ApiFootballClient).fixturesForDate('2027-01-20')).rejects.toThrow(
@@ -175,6 +180,7 @@ describe('Sincronización de partidos de API-Football', () => {
       expect(await prisma.apiRequestBudget.count()).toBe(0);
     } finally {
       fetch.mockRestore();
+      configGet.mockRestore();
     }
   });
 });
