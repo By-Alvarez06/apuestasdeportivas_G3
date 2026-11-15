@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { MatchStatus, MarketType, type MatchSummary } from '@apuestas/shared';
+import { MatchStatus, type MatchSummary } from '@apuestas/shared';
 import { Notice } from '@/components/Notice';
 import { MatchTeams } from '@/components/MatchTeams';
 import { api, messageOf } from '@/lib/api';
@@ -36,12 +36,6 @@ interface FilterState {
 }
 
 const EMPTY_FILTERS: FilterState = { from: '', to: '', competitionId: '', status: '' };
-const MARKET_LABELS: Record<MarketType, string> = {
-  [MarketType.RESULT_1X2]: 'Resultado del partido',
-  [MarketType.DOUBLE_CHANCE]: 'Doble oportunidad',
-  [MarketType.TOTAL_GOALS]: 'Total de goles',
-  [MarketType.BOTH_TEAMS_SCORE]: 'Ambos equipos marcan',
-};
 const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   [MatchStatus.SCHEDULED]: 'Programado',
   [MatchStatus.LIVE]: 'En vivo',
@@ -226,7 +220,12 @@ export default function MatchesPage() {
 
       <section className={`${styles.grid} ${styles.fixtureList}`} aria-label="Partidos">
         {data?.items.map((match) => (
-          <article className={styles.card} key={match.id}>
+          <Link
+            className={`${styles.card} ${styles.matchCard}`}
+            href={`/partidos/${match.id}`}
+            key={match.id}
+            aria-label={`Ver ${match.homeTeam.name} contra ${match.awayTeam.name}`}
+          >
             <p className={styles.meta}>
               {match.competition?.name ?? 'Sin competición'} · {dateTime(match.kickoffAt)}
             </p>
@@ -237,36 +236,8 @@ export default function MatchesPage() {
               awayScore={match.awayScore}
             />
             <p className={styles.meta}>Estado: {MATCH_STATUS_LABELS[match.status]}</p>
-            {match.markets.length > 0 ? (
-              <div className={styles.markets}>
-                {match.markets.map((market) => (
-                  <div className={styles.market} key={market.id}>
-                    <strong>
-                      {market.type === MarketType.TOTAL_GOALS && market.line
-                        ? `${MARKET_LABELS[market.type]} (${market.line})`
-                        : MARKET_LABELS[market.type]}
-                    </strong>
-                    <div className={styles.selections}>
-                      {market.selections.map((selection) => (
-                        <span className={styles.selection} key={selection.id}>
-                          {market.type === MarketType.TOTAL_GOALS && market.line
-                            ? `${selection.label} de ${market.line}`
-                            : selection.label}{' '}
-                          <strong>{Number(selection.odds).toFixed(2)}</strong>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="muted">Aún no hay mercados publicados.</p>
-            )}
-            <div className={styles.links}>
-              <Link href={`/partidos/${match.id}`}>Ver detalle</Link>
-              <Link href={`/apuestas?matchId=${encodeURIComponent(match.id)}`}>Apostar</Link>
-            </div>
-          </article>
+            <span className={styles.matchCardAction}>Ver partido y cuotas</span>
+          </Link>
         ))}
       </section>
 
