@@ -11,6 +11,10 @@ try {
   // en CI las variables vienen del entorno
 }
 
+// Cada caso registra, verifica y deposita antes de probar; con el servidor de desarrollo recién
+// arrancado, Next compila cada página en su primera visita: 30 s no alcanzan.
+test.describe.configure({ timeout: 90_000 });
+
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 let payphone: Server;
 let operator: APIRequestContext;

@@ -274,7 +274,7 @@ correcta; la actividad normal no genera alertas.
 - [X] T069 [P] Medir la latencia resultado → pantalla en la E2E de T041 y en local con 50 apuestas abiertas; documentar el p95 obtenido (objetivo SC-004 ≤ 5 s) en [quickstart.md](quickstart.md)
 - [X] T070 [P] Recorrer [quickstart.md](quickstart.md) de punta a punta y corregir pasos o comandos que no coincidan
 - [X] T071 [P] Actualizar `CLAUDE.md` (comandos y notas no obvias: catálogo simulado, colas, Redis en pruebas) y marcar la spec 4 como "Terminada" con su responsable en `specs/README.md`
-- [ ] T072 Correr `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, todas las pruebas de API y web, y revisar el análisis de SonarQube del PR (sin vulnerabilidades críticas ni altas)
+- [X] T072 Correr `pnpm lint`, `pnpm typecheck`, `pnpm format:check`, todas las pruebas de API y web, y revisar el análisis de SonarQube del PR (sin vulnerabilidades críticas ni altas)
 
 🔖 Commit: `docs(spec-4): comandos, quickstart y cierre`
 
