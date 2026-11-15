@@ -19,6 +19,10 @@ export interface CatalogMatch {
   label: string;
   startsAt: string;
   status: 'SCHEDULED' | 'LIVE' | 'FINISHED' | 'SUSPENDED' | 'POSTPONED' | 'CANCELLED';
+  homeTeam: { name: string; logoUrl: string | null };
+  awayTeam: { name: string; logoUrl: string | null };
+  homeScore: number | null;
+  awayScore: number | null;
   markets: CatalogMarket[];
 }
 

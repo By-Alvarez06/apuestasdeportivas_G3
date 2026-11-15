@@ -13,8 +13,8 @@ import type {
 
 const MATCH_INCLUDE = {
   competition: { select: { name: true } },
-  homeTeam: { select: { name: true } },
-  awayTeam: { select: { name: true } },
+  homeTeam: { select: { name: true, logoUrl: true } },
+  awayTeam: { select: { name: true, logoUrl: true } },
   markets: {
     where: { status: MarketStatus.OPEN },
     include: {
@@ -165,6 +165,10 @@ export class PrismaMatchCatalog implements MatchCatalogPort {
       label: this.matchLabel(match),
       startsAt: match.kickoffAt,
       status: MATCH_STATUS[match.status],
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      homeScore: match.homeScore,
+      awayScore: match.awayScore,
       markets,
     };
   }

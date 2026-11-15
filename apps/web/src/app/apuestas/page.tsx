@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { UserRole } from '@apuestas/shared';
 import { AppShell } from '@/components/AppShell';
 import { BetSlip, type SlipBalances } from '@/components/BetSlip';
 import { useLive } from '@/components/LiveProvider';
+import { MatchTeams } from '@/components/MatchTeams';
 import { Notice } from '@/components/Notice';
 import { api, messageOf } from '@/lib/api';
 import {
@@ -43,6 +44,7 @@ function Betting() {
   const [placed, setPlaced] = useState<BetView | null>(null);
   const [slipNote, setSlipNote] = useState('');
   const [error, setError] = useState('');
+  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -64,6 +66,9 @@ function Betting() {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    setSelectedMatchId(new URLSearchParams(window.location.search).get('matchId'));
+  }, []);
   useLive('wallet.updated', (w) => setBalances({ real: w.real, bonus: w.bonus }));
   useLive('resync', () => void load());
 
@@ -110,14 +115,25 @@ function Betting() {
     void load();
   }
 
-  const live = matches?.filter((m) => m.status === 'LIVE') ?? [];
-  const upcoming = matches?.filter((m) => m.status !== 'LIVE') ?? [];
+  const visibleMatches = useMemo(
+    () => matches?.filter((match) => !selectedMatchId || match.matchId === selectedMatchId) ?? [],
+    [matches, selectedMatchId],
+  );
+  const live = visibleMatches.filter((m) => m.status === 'LIVE');
+  const upcoming = visibleMatches.filter((m) => m.status !== 'LIVE');
+  const selectedMatchUnavailable =
+    selectedMatchId !== null && matches !== null && visibleMatches.length === 0;
 
   return (
     <div className={styles.layout}>
       <div className={styles.board}>
         <header className={styles.title}>
           <h1>Apostar</h1>
+          {selectedMatchId && (
+            <Link href="/apuestas" onClick={() => setSelectedMatchId(null)}>
+              Ver todos los partidos
+            </Link>
+          )}
           {limits && (
             <p className="muted">
               Hoy llevas {usd(limits.dailyStakeUsed)} de {usd(limits.dailyStakePerUser)} apostados.
@@ -129,6 +145,14 @@ function Betting() {
         {matches === null && !error && <p role="status">Cargando partidos…</p>}
         {matches?.length === 0 && (
           <p className="muted">No hay partidos con apuestas abiertas en este momento.</p>
+        )}
+        {selectedMatchUnavailable && (
+          <Notice tone="warning">
+            Este partido ya no tiene apuestas disponibles.{' '}
+            <Link href="/apuestas" onClick={() => setSelectedMatchId(null)}>
+              Ver otros partidos
+            </Link>
+          </Notice>
         )}
 
         {live.length > 0 && (
@@ -190,12 +214,17 @@ function MatchGroup({
     <section className={styles.group} aria-label={title}>
       <h2>{title}</h2>
       {matches.map((match) => {
-        const { competition, teams } = splitMatchLabel(match.label);
+        const { competition } = splitMatchLabel(match.label);
         const isLive = match.status === 'LIVE';
         return (
           <article key={match.matchId} className={styles.match}>
             <header className={styles.matchHead}>
-              <h3>{teams}</h3>
+              <MatchTeams
+                homeTeam={match.homeTeam}
+                awayTeam={match.awayTeam}
+                homeScore={match.homeScore}
+                awayScore={match.awayScore}
+              />
               <p className={styles.matchMeta}>
                 {competition && <span>{competition}</span>}
                 {isLive ? (

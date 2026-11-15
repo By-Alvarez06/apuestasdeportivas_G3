@@ -37,10 +37,40 @@ interface SimMatch {
   label: string;
   startsAt: Date;
   status: MatchStatus;
+  homeTeam: { name: string; logoUrl: string | null };
+  awayTeam: { name: string; logoUrl: string | null };
+  homeScore: number | null;
+  awayScore: number | null;
   markets: SimMarket[];
 }
 
 const CLOSED_MATCH: ReadonlySet<MatchStatus> = new Set(['FINISHED', 'CANCELLED']);
+
+function parseTeams(label: string): [string, string] {
+  const teams = label.split(' · ').at(-1) ?? label;
+  const separator = teams.includes(' vs ') ? ' vs ' : ' - ';
+  const [home = teams, ...away] = teams.split(separator);
+  return [home.trim(), away.join(separator).trim()];
+}
+
+function toSimMatch(match: FixtureMatch, base: number): SimMatch {
+  const [home, away] = parseTeams(match.label);
+  return {
+    matchId: match.matchId,
+    label: match.label,
+    startsAt: new Date(base + match.startsInMinutes * 60_000),
+    status: match.status as MatchStatus,
+    homeTeam: { name: home, logoUrl: null },
+    awayTeam: { name: away, logoUrl: null },
+    homeScore: null,
+    awayScore: null,
+    markets: match.markets.map((market) => ({
+      ...market,
+      status: market.status as MarketStatus,
+      selections: market.selections.map((selection) => ({ ...selection })),
+    })),
+  };
+}
 
 /**
  * Catálogo de partidos en memoria que sustituye a la spec 3 (research R2). Carga `fixtures.json`
@@ -59,20 +89,7 @@ export class SimulatedCatalog implements MatchCatalogPort {
   reset(): void {
     const base = this.now().getTime();
     this.matches = new Map(
-      (fixtures.matches as FixtureMatch[]).map((m) => [
-        m.matchId,
-        {
-          matchId: m.matchId,
-          label: m.label,
-          startsAt: new Date(base + m.startsInMinutes * 60_000),
-          status: m.status as MatchStatus,
-          markets: m.markets.map((mk) => ({
-            ...mk,
-            status: mk.status as MarketStatus,
-            selections: mk.selections.map((s) => ({ ...s })),
-          })),
-        },
-      ]),
+      (fixtures.matches as FixtureMatch[]).map((match) => [match.matchId, toSimMatch(match, base)]),
     );
     this.history.clear();
   }
@@ -112,6 +129,10 @@ export class SimulatedCatalog implements MatchCatalogPort {
         label: m.label,
         startsAt: new Date(m.startsAt),
         status: m.status,
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        homeScore: m.homeScore,
+        awayScore: m.awayScore,
         markets: m.markets.map((mk) => ({
           marketId: mk.marketId,
           label: mk.label,

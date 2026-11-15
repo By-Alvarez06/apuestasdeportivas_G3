@@ -35,8 +35,8 @@ describe('PrismaMatchCatalog', () => {
             kickoffAt: startsAt,
             status: 'LIVE',
             competition: { name: 'Liga de Prueba' },
-            homeTeam: { name: 'Equipo local' },
-            awayTeam: { name: 'Equipo visitante' },
+            homeTeam: { name: 'Equipo local', logoUrl: 'https://example.test/local.png' },
+            awayTeam: { name: 'Equipo visitante', logoUrl: null },
           },
         },
       },
@@ -89,9 +89,11 @@ describe('PrismaMatchCatalog', () => {
         id: 'match-1',
         kickoffAt: startsAt,
         status: 'SCHEDULED',
+        homeScore: null,
+        awayScore: null,
         competition: { name: 'Liga de Prueba' },
-        homeTeam: { name: 'Equipo local' },
-        awayTeam: { name: 'Equipo visitante' },
+        homeTeam: { name: 'Equipo local', logoUrl: 'https://example.test/local.png' },
+        awayTeam: { name: 'Equipo visitante', logoUrl: null },
         markets: [
           {
             id: 'market-1',
@@ -125,6 +127,10 @@ describe('PrismaMatchCatalog', () => {
         label: 'Liga de Prueba · Equipo local - Equipo visitante',
         startsAt,
         status: 'SCHEDULED',
+        homeTeam: { name: 'Equipo local', logoUrl: 'https://example.test/local.png' },
+        awayTeam: { name: 'Equipo visitante', logoUrl: null },
+        homeScore: null,
+        awayScore: null,
         markets: [
           {
             marketId: 'market-1',

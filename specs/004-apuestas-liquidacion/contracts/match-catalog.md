@@ -33,9 +33,12 @@ interface MatchCatalogPort {
   /** Cambios de cuota de una selección entre dos instantes (para la regla ODDS_DROP_PATTERN). */
   oddsHistory(selectionId: string, from: Date, to: Date): Promise<{ at: Date; odds: Odds }[]>;
 
-  /** Partidos con mercados abiertos, para la pantalla de apuestas provisional. */
+  /** Partidos con mercados abiertos, con escudos y marcador para la pantalla de apuestas. */
   listOpenMatches(): Promise<
     { matchId: string; label: string; startsAt: Date; status: MatchStatus;
+      homeTeam: { name: string; logoUrl: string | null };
+      awayTeam: { name: string; logoUrl: string | null };
+      homeScore: number | null; awayScore: number | null;
       markets: { marketId: string; label: string; status: MarketStatus; live: boolean;
         selections: { selectionId: string; label: string; odds: Odds }[] }[] }[]
   >;

@@ -40,6 +40,10 @@ export interface CatalogMatch {
   label: string;
   startsAt: Date;
   status: MatchStatus;
+  homeTeam: { name: string; logoUrl: string | null };
+  awayTeam: { name: string; logoUrl: string | null };
+  homeScore: number | null;
+  awayScore: number | null;
   markets: {
     marketId: string;
     label: string;

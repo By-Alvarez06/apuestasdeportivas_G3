@@ -264,7 +264,7 @@ export default function MatchesPage() {
             )}
             <div className={styles.links}>
               <Link href={`/partidos/${match.id}`}>Ver detalle</Link>
-              <Link href="/apuestas">Apostar</Link>
+              <Link href={`/apuestas?matchId=${encodeURIComponent(match.id)}`}>Apostar</Link>
             </div>
           </article>
         ))}

@@ -32,7 +32,9 @@ describe('Catálogo real de partidos para apuestas', () => {
       data: { name: 'Liga de Prueba', country: 'Ecuador' },
     });
     const [home, away] = await Promise.all([
-      prisma.team.create({ data: { name: 'Equipo local' } }),
+      prisma.team.create({
+        data: { name: 'Equipo local', logoUrl: 'https://example.test/local.png' },
+      }),
       prisma.team.create({ data: { name: 'Equipo visitante' } }),
     ]);
     const match = await prisma.match.create({
@@ -77,6 +79,10 @@ describe('Catálogo real de partidos para apuestas', () => {
     expect(catalog.body).toEqual([
       expect.objectContaining({
         label: 'Liga de Prueba · Equipo local - Equipo visitante',
+        homeTeam: { name: 'Equipo local', logoUrl: 'https://example.test/local.png' },
+        awayTeam: { name: 'Equipo visitante', logoUrl: null },
+        homeScore: null,
+        awayScore: null,
         markets: [
           expect.objectContaining({
             label: 'Resultado del partido',

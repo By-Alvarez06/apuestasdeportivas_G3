@@ -69,7 +69,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
               awayScore={match.awayScore}
             />
             <p>Estado: {MATCH_STATUS_LABELS[match.status]}</p>
-            <Link className="button" href="/apuestas">
+            <Link className="button" href={`/apuestas?matchId=${encodeURIComponent(match.id)}`}>
               Ir a Apostar
             </Link>
           </header>

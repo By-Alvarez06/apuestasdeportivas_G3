@@ -18,6 +18,10 @@ export class CatalogController {
       label: m.label,
       startsAt: m.startsAt.toISOString(),
       status: m.status,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
       markets: m.markets.map((mk) => ({
         marketId: mk.marketId,
         label: mk.label,
