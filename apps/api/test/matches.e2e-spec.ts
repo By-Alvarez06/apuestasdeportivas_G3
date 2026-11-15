@@ -8,6 +8,7 @@ import {
 import type { PrismaClient } from '../src/generated/prisma/client';
 import {
   MarketStatus,
+  MarketType as DbMarketType,
   MatchStatus as DbMatchStatus,
   OddsSource,
   Role,
@@ -63,6 +64,21 @@ describe('Partidos y mercados (spec 3)', () => {
     return response.body.id as string;
   }
 
+  async function addExternalOdds(matchId: string): Promise<void> {
+    const market = await prisma.market.create({
+      data: { matchId, type: DbMarketType.TOTAL_GOALS, line: '2.5' },
+    });
+    await prisma.selection.create({
+      data: {
+        marketId: market.id,
+        key: 'OVER',
+        label: 'Más de 2.5',
+        source: OddsSource.API_FOOTBALL,
+        odds: '1.850',
+      },
+    });
+  }
+
   it('permite editar competiciones y conserva la auditoría del cambio', async () => {
     const created = await post(
       '/operator/competitions',
@@ -100,6 +116,8 @@ describe('Partidos y mercados (spec 3)', () => {
     const upcomingId = await createMatch();
     const liveId = await createMatch();
     const finishedId = await createMatch();
+    const withoutOddsId = await createMatch();
+    await Promise.all([upcomingId, liveId, finishedId].map(addExternalOdds));
     await prisma.match.update({
       where: { id: liveId },
       data: {
@@ -120,6 +138,56 @@ describe('Partidos y mercados (spec 3)', () => {
     expect(ids).toContain(upcomingId);
     expect(ids).toContain(liveId);
     expect(ids).not.toContain(finishedId);
+    expect(ids).not.toContain(withoutOddsId);
+  });
+
+  it('limita la cartelera pública a 20 partidos con cuotas externas abiertas', async () => {
+    const matchIds: string[] = [];
+    for (let index = 0; index < 21; index += 1) {
+      const matchId = await createMatch();
+      matchIds.push(matchId);
+      await addExternalOdds(matchId);
+    }
+    const closedMarket = await prisma.market.create({
+      data: {
+        matchId: matchIds[0]!,
+        type: DbMarketType.RESULT_1X2,
+        status: MarketStatus.CLOSED,
+      },
+    });
+    await prisma.selection.create({
+      data: {
+        marketId: closedMarket.id,
+        key: 'HOME',
+        label: 'Local',
+        source: OddsSource.API_FOOTBALL,
+        odds: '2.500',
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/matches?pageSize=100')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ total: 21, pageSize: 20 });
+    expect(response.body.items).toHaveLength(20);
+    expect(
+      response.body.items.every(
+        (match: {
+          markets: {
+            status: string;
+            selections: { source: string; isActive: boolean }[];
+          }[];
+        }) =>
+          match.markets.length > 0 &&
+          match.markets.every((market) =>
+            market.status === PublicMarketStatus.OPEN &&
+            market.selections.every(
+              (selection) => selection.source === 'API_FOOTBALL' && selection.isActive,
+            ),
+          ),
+      ),
+    ).toBe(true);
   });
 
   async function createResultMarket(matchId: string): Promise<string> {

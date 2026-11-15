@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { MatchStatus, type MatchSummary } from '@apuestas/shared';
 import { Notice } from '@/components/Notice';
+import { MatchTeams } from '@/components/MatchTeams';
 import { api, messageOf } from '@/lib/api';
 import { dateTime } from '@/lib/format';
 import styles from '../matches.module.css';
@@ -80,7 +81,8 @@ export default function MatchesPage() {
       <header>
         <h1>Partidos</h1>
         <p className="muted">
-          Cartelera y mercados publicados. Los filtros y horarios usan tu hora local.
+          Próximos partidos con cuotas publicadas. Se muestran hasta 20 por página; los filtros y
+          horarios usan tu hora local.
         </p>
       </header>
       <form
@@ -142,17 +144,18 @@ export default function MatchesPage() {
         <p className="muted">No hay partidos con esos filtros.</p>
       )}
 
-      <section className={styles.grid} aria-label="Partidos">
+      <section className={`${styles.grid} ${styles.fixtureList}`} aria-label="Partidos">
         {data?.items.map((match) => (
           <article className={styles.card} key={match.id}>
             <p className={styles.meta}>
               {match.competition?.name ?? 'Sin competición'} · {dateTime(match.kickoffAt)}
             </p>
-            <h2 className={styles.teams}>
-              {match.homeTeam.name}{' '}
-              {match.homeScore !== null && ` ${match.homeScore} - ${match.awayScore} `}
-              {match.awayTeam.name}
-            </h2>
+            <MatchTeams
+              homeTeam={match.homeTeam}
+              awayTeam={match.awayTeam}
+              homeScore={match.homeScore}
+              awayScore={match.awayScore}
+            />
             <p className={styles.meta}>Estado: {match.status}</p>
             {match.markets.length > 0 ? (
               <div className={styles.markets}>
@@ -181,25 +184,27 @@ export default function MatchesPage() {
         ))}
       </section>
 
-      <nav className={styles.pager} aria-label="Páginas de partidos">
-        <button
-          className="button-quiet"
-          disabled={page <= 1 || loading}
-          onClick={() => setPage(page - 1)}
-        >
-          Anteriores
-        </button>
-        <span className="muted">
-          Página {page} de {pages}
-        </span>
-        <button
-          className="button-quiet"
-          disabled={page >= pages || loading}
-          onClick={() => setPage(page + 1)}
-        >
-          Siguientes
-        </button>
-      </nav>
+      {pages > 1 && (
+        <nav className={styles.pager} aria-label="Páginas de partidos">
+          <button
+            className="button-quiet"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage(page - 1)}
+          >
+            Anteriores
+          </button>
+          <span className="muted">
+            Página {page} de {pages}
+          </span>
+          <button
+            className="button-quiet"
+            disabled={page >= pages || loading}
+            onClick={() => setPage(page + 1)}
+          >
+            Siguientes
+          </button>
+        </nav>
+      )}
     </main>
   );
 }

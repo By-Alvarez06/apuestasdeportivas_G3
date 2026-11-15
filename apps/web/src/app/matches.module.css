@@ -37,6 +37,10 @@
   gap: 1rem;
 }
 
+.fixtureList {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .card {
   display: grid;
   align-content: start;
@@ -58,6 +62,55 @@
   font-family: var(--font-display);
   font-size: var(--step-1);
   font-weight: 700;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.fixtureTeams {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.fixtureTeam {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2rem;
+}
+
+.crest,
+.crestFallback {
+  display: grid;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  object-fit: contain;
+}
+
+.crestFallback {
+  color: var(--ink-soft);
+  background: var(--chalk);
+  border-radius: 50%;
+  font-size: var(--step--1);
+  font-weight: 700;
+}
+
+.teamName {
+  font-weight: 600;
+}
+
+.teamScore {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .meta {

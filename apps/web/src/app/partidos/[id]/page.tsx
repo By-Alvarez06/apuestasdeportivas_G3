@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { type MatchSummary } from '@apuestas/shared';
 import { Notice } from '@/components/Notice';
+import { MatchTeams } from '@/components/MatchTeams';
 import { api, messageOf } from '@/lib/api';
 import { dateTime } from '@/lib/format';
 import styles from '../../matches.module.css';
@@ -42,11 +43,15 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
             <p className={styles.meta}>
               {match.competition?.name ?? 'Sin competición'} · {dateTime(match.kickoffAt)}
             </p>
-            <h1>
-              {match.homeTeam.name}{' '}
-              {match.homeScore !== null && ` ${match.homeScore} - ${match.awayScore} `}
-              {match.awayTeam.name}
+            <h1 className={styles.visuallyHidden}>
+              {match.homeTeam.name} - {match.awayTeam.name}
             </h1>
+            <MatchTeams
+              homeTeam={match.homeTeam}
+              awayTeam={match.awayTeam}
+              homeScore={match.homeScore}
+              awayScore={match.awayScore}
+            />
             <p>Estado: {match.status}</p>
           </header>
           <section className={styles.grid} aria-label="Mercados publicados">

@@ -42,6 +42,20 @@ const MATCH_INCLUDE = {
   },
 } satisfies Prisma.MatchInclude;
 
+const PUBLIC_MATCH_INCLUDE = {
+  ...MATCH_INCLUDE,
+  markets: {
+    where: { status: MarketStatus.OPEN },
+    include: {
+      selections: {
+        where: { isActive: true },
+        orderBy: { updatedAt: 'desc' as const },
+      },
+    },
+    orderBy: MATCH_INCLUDE.markets.orderBy,
+  },
+} satisfies Prisma.MatchInclude;
+
 type MatchRecord = Prisma.MatchGetPayload<{ include: typeof MATCH_INCLUDE }>;
 type Transaction = Prisma.TransactionClient;
 
@@ -113,20 +127,29 @@ export class MatchesService {
       ...(filters.from === undefined && filters.to === undefined
         ? { OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }
         : {}),
+      markets: {
+        some: {
+          status: MarketStatus.OPEN,
+          selections: {
+            some: { source: OddsSource.API_FOOTBALL, isActive: true },
+          },
+        },
+      },
     };
+    const pageSize = Math.min(filters.pageSize, 20);
     const total = await this.prisma.match.count({ where });
     const rows = await this.prisma.match.findMany({
       where,
-      include: MATCH_INCLUDE,
+      include: PUBLIC_MATCH_INCLUDE,
       orderBy: [{ kickoffAt: 'asc' }, { id: 'asc' }],
-      skip: (filters.page - 1) * filters.pageSize,
-      take: filters.pageSize,
+      skip: (filters.page - 1) * pageSize,
+      take: pageSize,
     });
     return {
       items: rows.map((match) => this.serializeMatch(match, false)),
       total,
       page: filters.page,
-      pageSize: filters.pageSize,
+      pageSize,
     };
   }
 
