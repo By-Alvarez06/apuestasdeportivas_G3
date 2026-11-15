@@ -120,7 +120,10 @@ def report_filters(
 
 def where_clause(date_column: str, filters: dict, alias: str = "m") -> tuple[str, list]:
     clauses = [f"{date_column} >= $1", f"{date_column} <= $2"]
-    params: list = [filters["from"], filters["to"]]
+    params: list = [
+        filters["from"].astimezone(UTC).replace(tzinfo=None),
+        filters["to"].astimezone(UTC).replace(tzinfo=None),
+    ]
     if filters["competitionId"]:
         params.append(filters["competitionId"])
         clauses.append(f'{alias}."competitionId" = ${len(params)}::uuid')

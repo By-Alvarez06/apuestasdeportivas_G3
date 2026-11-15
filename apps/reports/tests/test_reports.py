@@ -1,11 +1,11 @@
 """Pruebas de validación y exportación del servicio de informes."""
 
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 
 import asyncpg
 import pytest
-from app.main import app, csv_export, pdf_export, report_filters
+from app.main import app, csv_export, pdf_export, report_filters, where_clause
 from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 
@@ -60,6 +60,17 @@ def test_report_filters_normalize_dates_and_bound_period():
             None,
             None,
         )
+
+
+def test_report_query_uses_naive_utc_for_postgres_timestamp_columns():
+    filters = report_filters(
+        datetime(2026, 11, 13, 19, tzinfo=timezone(timedelta(hours=-5))),
+        datetime(2026, 11, 14, 19, tzinfo=timezone(timedelta(hours=-5))),
+        None,
+        None,
+    )
+    _, params = where_clause('m."kickoffAt"', filters)
+    assert params == [datetime(2026, 11, 14), datetime(2026, 11, 15)]
 
 
 def test_csv_exports_stable_utf8_headers_and_escaped_values():
