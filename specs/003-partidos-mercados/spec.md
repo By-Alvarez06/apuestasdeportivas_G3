@@ -13,8 +13,8 @@
 - Sincronización de partidos y, cuando el plan del proveedor lo permita, cuotas de API-Football.
 - Gestión manual por `OPERATOR` y `ADMIN`, con auditoría.
 - Dashboard operacional de partidos, cuotas y actividad, con CSV y PDF para los mismos filtros.
-- El presupuesto diario exacto de API-Football aún no se conoce. Sin un límite positivo explícito
-  configurado, la sincronización externa no realiza peticiones.
+- El equipo confirmó un límite de 100 solicitudes diarias para la configuración local. Sin un
+  límite positivo explícito, la sincronización externa no realiza peticiones.
 
 ## Actores y permisos
 

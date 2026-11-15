@@ -103,10 +103,12 @@ peticiones nunca superan el presupuesto configurado y que presupuesto ausente im
 peticiones; gestión de operador y reportes aplican permisos/auditoría, y CSV/PDF respetan los
 mismos filtros. Alcance y reglas: [`specs/003-partidos-mercados/spec.md`](specs/003-partidos-mercados/spec.md).
 
-La implementación está en `feature/spec-3`. Para habilitar uso real aún se debe configurar el
-presupuesto contratado de API-Football, la casa habilitada para cuotas y ejecutar la provisión de
-la cuenta PostgreSQL de reportes de solo lectura. La validación e2e API completa también debe
-repetirse en un entorno donde Node no cierre el proceso nativo.
+La implementación está en `feature/spec-3`. En el entorno local se configuró el presupuesto
+confirmado de 100 solicitudes diarias y se verificó la cuenta PostgreSQL de reportes de solo
+lectura. La API respondió correctamente a la consulta de fixtures y devolvió el catálogo de
+bookmakers; faltan elegir una casa admitida por el plan para activar cuotas externas. Las pruebas
+dirigidas de Spec 3 pasan; la e2e completa deja un fallo ajeno a esta fase en la prueba de
+concurrencia de administradores.
 
 ### F4 — Apuestas (S4)
 - [ ] Boleto de apuesta (bet slip) simple y combinada.

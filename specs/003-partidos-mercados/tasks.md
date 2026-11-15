@@ -18,25 +18,30 @@
 - [x] T009 Crear cartelera y detalle de partidos accesibles, adaptables a móvil y con mercados.
 - [x] T010 Crear interfaces de operador para competiciones, partidos, transiciones, mercados y
   cuotas manuales con confirmación/motivos.
-- [ ] T011 Preparar credencial PostgreSQL de reportes con permisos de solo lectura y validar que
+- [x] T011 Preparar credencial PostgreSQL de reportes con permisos de solo lectura y validar que
   no puede modificar tablas.
 - [x] T012 Implementar endpoints Python protegidos y consultas acotadas para dashboard y actividad.
 - [x] T013 Implementar CSV UTF-8 y PDF con los mismos filtros, encabezados, límites y zona horaria.
 - [x] T014 Integrar dashboard y exportaciones en la web mediante proxy autenticado NestJS.
-- [ ] T015 Ejecutar pruebas dirigidas, lint, tipos, build y pruebas integradas disponibles; corregir
+- [x] T015 Ejecutar pruebas dirigidas, lint, tipos, build y pruebas integradas disponibles; corregir
   regresiones relacionadas.
 - [x] T016 Verificar catálogo, estado de spec, mensajes Conventional Commits y ausencia de secretos
   en cambios/staging.
 
 ## Validación y pendientes de entorno
 
-- Pasan las pruebas unitarias API, las e2e dirigidas de partidos, presupuesto, sincronización y
-  acceso a reportes, las pruebas Python, lint, tipos y build de producción web.
-- La ejecución conjunta de toda la suite e2e API terminó con un cierre nativo de Node en Windows
-  (código `-1073740791`) después de dos suites; las suites relacionadas con spec 3 pasan por
-  separado.
-- T011 queda pendiente hasta ejecutar `read-only-role.sql` en el entorno acordado y definir
-  `REPORTS_READONLY_TEST_URL`; se incluye una prueba que verifica el rechazo de escrituras cuando
-  se proporciona esa credencial.
-- API-Football no realizará llamadas reales hasta definir el presupuesto diario positivo y, para
-  cuotas, el identificador de casa habilitado en el plan contratado.
+- Pasan las 73 pruebas unitarias de API y las e2e de Spec 3: partidos (10), presupuesto (3),
+  sincronización (6) y acceso a reportes (1). También pasan las 6 pruebas Python, Ruff, lint,
+  typecheck, build de API y build de producción web.
+- La suite e2e API completa ejecutó 17 suites: 16 pasaron y falló una prueba ajena a Spec 3 en
+  `admin.e2e-spec.ts` (esperaba 409 y recibió 403 al retirar simultáneamente el rol de dos
+  administradores). No se modificó esa funcionalidad fuera de alcance.
+- T011 se verificó en la base local: el rol `apuestas_reports` puede consultar y la prueba confirma
+  que no puede modificar tablas.
+- El presupuesto local de API-Football se configuró en 100 solicitudes diarias, según el límite
+  confirmado por el equipo. Se verificaron fixtures y el catálogo de 33 bookmakers usando dos
+  solicitudes; el contador local quedó en 2/100.
+- Las cuotas externas siguen desactivadas hasta que el equipo elija un bookmaker del catálogo
+  permitido por su plan.
+- El entorno e2e fuerza credenciales de proveedor vacías y una clave TOTP temporal de pruebas para
+  no heredar secretos ni placeholders del `.env` local.
