@@ -31,7 +31,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
   private toResponse(exception: unknown): [number, ApiErrorBody] {
     if (exception instanceof DomainError) {
-      return [exception.status, { error: { code: exception.code, message: exception.message } }];
+      const { code, message, details } = exception;
+      return [
+        exception.status,
+        { error: details ? { code, message, details } : { code, message } },
+      ];
     }
     if (exception instanceof HttpException) {
       const status = exception.getStatus();

@@ -1,0 +1,304 @@
+.layout {
+  display: grid;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.board {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.title {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.group > h2 {
+  font-size: var(--step-1);
+}
+
+.match {
+  display: grid;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.selectedMatch {
+  border-color: var(--pitch);
+  box-shadow: 0 0 0 1px var(--pitch) inset;
+}
+
+.browser {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.browserHeader {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.browserHeader h2,
+.browserHeader p {
+  margin: 0;
+}
+
+.browserHeader h2 {
+  font-size: var(--step-1);
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.filters input,
+.filters select {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.matchTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.matchTab {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.matchTab:hover,
+.matchTabActive {
+  border-color: var(--pitch);
+}
+
+.matchTabActive {
+  color: var(--chalk);
+  background: var(--pitch);
+}
+
+.fixtureList {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fixtureGroup {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fixtureGroup > h3 {
+  margin: 0;
+  font-size: var(--step-0);
+}
+
+.liveHeading,
+.liveStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--card-red);
+  font-weight: 600;
+}
+
+.liveDot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 0.55rem;
+  border-radius: 50%;
+  background: var(--card-red);
+}
+
+.fixture {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.fixture:hover {
+  border-color: var(--pitch);
+  box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.fixture:focus-visible {
+  outline: 3px solid var(--pitch);
+  outline-offset: 3px;
+}
+
+.fixtureSelected {
+  border-color: var(--pitch);
+  box-shadow: 0 0 0 1px var(--pitch) inset;
+}
+
+.fixtureMeta {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.fixtureAction {
+  width: fit-content;
+  color: var(--pitch);
+  font-weight: 600;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.matchHead {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.matchHead h3 {
+  font-size: var(--step-2);
+}
+
+.matchMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.liveTag {
+  font-weight: 600;
+  color: var(--card-red);
+}
+
+.liveTag::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: 0.375rem;
+  border-radius: 50%;
+  background: var(--card-red);
+}
+
+.market {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.marketLabel {
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.odds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+}
+
+.odd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--chalk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.odd:hover:not(:disabled) {
+  border-color: var(--pitch);
+}
+
+.odd[aria-pressed='true'] {
+  color: var(--chalk);
+  background: var(--pitch);
+  border-color: var(--pitch);
+}
+
+.odd:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.oddLabel {
+  font-size: var(--step--1);
+  overflow-wrap: anywhere;
+}
+
+.oddValue {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Móvil: el boleto queda pegado abajo para no perderlo al recorrer los partidos. */
+.slipColumn {
+  display: grid;
+  gap: 0.75rem;
+  position: sticky;
+  bottom: 0;
+  max-height: 75dvh;
+  overflow-y: auto;
+  box-shadow: 0 -0.5rem 1.5rem color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 20rem;
+  }
+
+  .slipColumn {
+    top: 1.5rem;
+    bottom: auto;
+    max-height: calc(100dvh - 3rem);
+    box-shadow: none;
+  }
+}

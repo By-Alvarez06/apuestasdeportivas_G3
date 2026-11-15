@@ -7,6 +7,8 @@ export class DomainError extends Error {
     readonly code: ErrorCode,
     message: string,
     readonly status: HttpStatus,
+    /** Datos que el cliente necesita para resolver el error, p. ej. las cuotas nuevas. Sin secretos. */
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
     this.name = new.target.name;

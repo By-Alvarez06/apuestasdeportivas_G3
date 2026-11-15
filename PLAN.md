@@ -91,13 +91,24 @@ F7 Reportes+Cierre                                               █████
 **Criterio de cierre**: pruebas de concurrencia (N depósitos/débitos simultáneos dejan el saldo exacto) y de doble confirmación (se acredita una sola vez).
 
 ### F3 — Partidos y mercados (S3)
-- [ ] Modelo de competición, partido, mercado, selección y cuota.
-- [ ] Máquina de estados del partido: `programado → en_vivo → finalizado`, `suspendido`, `aplazado`, `cancelado`.
-- [ ] Worker BullMQ de sincronización con API-Football, con presupuesto de peticiones diario y frecuencia adaptativa (alta solo en vivo).
-- [ ] CRUD de operador para partidos, mercados y cuotas manuales.
-- [ ] UI: cartelera de partidos y detalle de mercados.
+- [x] Modelo de competición, partido, mercado, selección y cuota.
+- [x] Máquina de estados del partido: `programado → en_vivo → finalizado`, `suspendido`, `aplazado`, `cancelado`.
+- [x] Worker BullMQ de sincronización con API-Football, con presupuesto diario obligatorio/fail-closed y frecuencia adaptativa (prioridad alta solo en vivo).
+- [x] CRUD auditable de operador para partidos, mercados y cuotas manuales.
+- [x] UI: cartelera, detalle de mercados y gestión de operador.
+- [x] Reportes operativos con dashboard y exportación CSV/PDF con filtros coincidentes.
 
-**Criterio de cierre**: los partidos del día se importan solos sin superar la cuota del plan de API-Football.
+**Criterio de cierre**: pruebas demuestran que los partidos se importan idempotentemente, que las
+peticiones nunca superan el presupuesto configurado y que presupuesto ausente implica cero
+peticiones; gestión de operador y reportes aplican permisos/auditoría, y CSV/PDF respetan los
+mismos filtros. Alcance y reglas: [`specs/003-partidos-mercados/spec.md`](specs/003-partidos-mercados/spec.md).
+
+La implementación está en `feature/spec-3`. Se verificó la cuenta PostgreSQL de reportes de solo
+lectura. La API respondió a fixtures y cuotas de Pinnacle (ID 4); se importaron 817 partidos y se
+verificaron dashboard, CSV y PDF. Tras observar 98 % de uso en el panel del proveedor, el
+presupuesto local quedó vacío y el worker externo desactivado hasta que la cuota se restablezca.
+Las pruebas dirigidas de Spec 3 pasan; la e2e completa deja un fallo ajeno a esta fase en la prueba
+de concurrencia de administradores.
 
 ### F4 — Apuestas (S4)
 - [ ] Boleto de apuesta (bet slip) simple y combinada.

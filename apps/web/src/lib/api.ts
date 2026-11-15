@@ -6,13 +6,15 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: ErrorCode,
     message: string,
+    /** Datos para resolver el error, p. ej. las cuotas nuevas de ODDS_CHANGED. */
+    readonly details?: Record<string, unknown>,
   ) {
     super(message);
   }
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH';
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT';
   body?: unknown;
   /** Para operaciones de dinero (FR-017). */
   idempotencyKey?: string;
@@ -39,7 +41,7 @@ const doRefresh = () =>
  * serializa con un Web Lock: la segunda envía el refresh nuevo que dejó la primera en la cookie, en vez
  * de reusar el viejo (que el servidor trataría como robo y cerraría todas las sesiones).
  */
-function refreshSession(): Promise<boolean> {
+export function refreshSession(): Promise<boolean> {
   if (!refreshing) {
     const run: Promise<boolean> = navigator.locks
       ? // request() resuelve la promesa del callback; el tipo de la lib DOM no lo refleja.
@@ -88,6 +90,7 @@ export async function api<T = void>(path: string, options: RequestOptions = {}):
       error?.code ?? ErrorCode.INTERNAL_ERROR,
       error?.message ??
         'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      error?.details,
     );
   }
   return data as T;

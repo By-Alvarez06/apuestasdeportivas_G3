@@ -1,0 +1,243 @@
+/* El boleto: una ficha blanca con cabecera de césped. Lo memorable es el pago, en cifra de marcador. */
+
+.slip {
+  display: grid;
+  align-content: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  overflow: hidden;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--chalk);
+  background: var(--pitch);
+}
+
+.head h2 {
+  font-size: var(--step-1);
+}
+
+.kind {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--card-yellow);
+}
+
+.empty {
+  padding: 1.25rem 1rem;
+  color: var(--ink-soft);
+}
+
+.body {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1rem;
+}
+
+.picks {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.pick {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--line);
+}
+
+.pickName {
+  font-weight: 600;
+}
+
+.pickMeta {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.live {
+  font-weight: 600;
+  color: var(--card-red);
+}
+
+.pickOdds {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.remove {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: var(--step-1);
+  line-height: 1;
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.remove:hover {
+  color: var(--card-red);
+}
+
+.total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--ink-soft);
+}
+
+.total strong {
+  margin-left: 0.25rem;
+}
+
+.total strong {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stakeRow {
+  position: relative;
+}
+
+.currency {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--ink-soft);
+}
+
+.stakeRow input {
+  padding-left: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preset {
+  font: inherit;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.25rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.75rem;
+  color: var(--pitch);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.preset[aria-pressed='true'] {
+  color: var(--chalk);
+  background: var(--pitch);
+  border-color: var(--pitch);
+}
+
+.sources {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+}
+
+.sources legend {
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+.source {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.source:has(input:checked) {
+  border-color: var(--pitch);
+  box-shadow: inset 4px 0 0 var(--pitch);
+}
+
+.source input {
+  accent-color: var(--pitch);
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.sourceAmount {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+/* El protagonista: lo que cobra si gana. */
+.payout {
+  display: grid;
+  gap: 0.125rem;
+  padding: 0.875rem 1rem;
+  color: var(--chalk);
+  background: var(--pitch-deep);
+  border-radius: var(--radius-field);
+}
+
+.payout span {
+  font-size: var(--step--1);
+  color: color-mix(in srgb, var(--chalk) 80%, transparent);
+}
+
+.payout strong {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.confirm {
+  width: 100%;
+}
+
+.oldOdds {
+  margin-right: 0.375rem;
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.fixedStake {
+  padding: 0.75rem;
+  border: 1px dashed var(--pitch);
+  border-radius: var(--radius-field);
+}

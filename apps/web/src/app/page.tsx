@@ -1,21 +1,18 @@
 import Link from 'next/link';
-import { AuthShell } from '@/components/AuthShell';
 
 export default function HomePage() {
   return (
-    <AuthShell title="Apuesta al fútbol con saldo de prueba">
+    <main className="stack">
+      <h1>Apuestas Deportivas</h1>
+      <p className="muted">Consulta los partidos, estados, mercados y cuotas disponibles.</p>
+      <Link className="button" href="/apuestas">
+        Ver partidos y apostar
+      </Link>
       <p className="muted">
-        Crea tu cuenta, deposita en el entorno de pruebas de Payphone y sigue tus movimientos al
-        centavo.
+        <Link href="/registro">Crear cuenta</Link>
+        {' · '}
+        <Link href="/ingresar">Inicia sesión</Link>
       </p>
-      <div className="stack">
-        <Link className="button" href="/registro">
-          Crear cuenta
-        </Link>
-        <p className="muted">
-          ¿Ya tienes cuenta? <Link href="/ingresar">Inicia sesión</Link>
-        </p>
-      </div>
-    </AuthShell>
+    </main>
   );
 }

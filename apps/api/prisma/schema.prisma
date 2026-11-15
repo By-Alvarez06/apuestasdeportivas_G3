@@ -26,6 +26,33 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum MatchStatus {
+  SCHEDULED @map("scheduled")
+  LIVE      @map("live")
+  FINISHED  @map("finished")
+  SUSPENDED @map("suspended")
+  POSTPONED @map("postponed")
+  CANCELLED @map("cancelled")
+}
+
+enum MarketStatus {
+  OPEN      @map("open")
+  SUSPENDED @map("suspended")
+  CLOSED    @map("closed")
+}
+
+enum MarketType {
+  RESULT_1X2       @map("result_1x2")
+  DOUBLE_CHANCE    @map("double_chance")
+  TOTAL_GOALS      @map("total_goals")
+  BOTH_TEAMS_SCORE @map("both_teams_score")
+}
+
+enum OddsSource {
+  MANUAL
+  API_FOOTBALL
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   email         String     @unique
@@ -47,6 +74,13 @@ model User {
   deposits      Deposit[]
   withdrawals   Withdrawal[]   @relation("WithdrawalOwner")
   reviewed      Withdrawal[]   @relation("WithdrawalReviewer")
+
+  // Spec 4
+  bets              Bet[]
+  couponRedemptions CouponRedemption[]
+  bonuses           Bonus[]
+  freeBets          FreeBet[]
+  debts             BetDebt[]
 }
 
 enum EmailTokenPurpose {
@@ -158,6 +192,12 @@ enum LedgerTransactionType {
   BET_DEBIT
   BET_CREDIT
   BONUS_CREDIT
+  // Spec 4
+  BET_REFUND
+  BET_REVERSAL
+  DEBT_COLLECTION
+  BONUS_CONVERSION
+  BONUS_EXPIRY
 }
 
 /// Inmutable.
@@ -242,4 +282,421 @@ model Withdrawal {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+}
+
+// ── Apuestas (spec 4) ────────────────────────────────────────────────────────
+// Ver specs/004-apuestas-liquidacion/data-model.md. Cuotas en centésimas (2.10 → 210). Sin claves
+// foráneas a partidos y mercados (spec 3): se guarda el id externo y una copia de las etiquetas.
+
+enum BetType {
+  SINGLE
+  COMBO
+}
+
+enum StakeSource {
+  REAL
+  BONUS
+  FREE_BET
+}
+
+enum BetStatus {
+  OPEN
+  WON
+  LOST
+  VOID
+}
+
+enum SelectionStatus {
+  PENDING
+  WON
+  LOST
+  VOID
+}
+
+/// No se borra; las columnas de dinero y cuota son inmutables (triggers en la migración).
+model Bet {
+  id                 String      @id @default(uuid()) @db.Uuid
+  userId             String      @db.Uuid
+  user               User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Idempotency-Key del cliente.
+  requestKey         String
+  type               BetType
+  /// Centavos; en FREE_BET es el valor de la apuesta gratis.
+  stake              Int
+  source             StakeSource
+  /// Producto exacto de las cuotas en centésimas^n (BigInt como texto).
+  totalOddsX         String
+  /// Centavos: floor(stake × Π cuotas).
+  potentialPayout    Int
+  status             BetStatus   @default(OPEN)
+  /// Versión de la última liquidación aplicada (0 = sin liquidar).
+  settledVersion     Int         @default(0)
+  /// Pagado en la liquidación vigente.
+  payout             Int         @default(0)
+  couponRedemptionId String?     @db.Uuid
+  /// Una apuesta gratis anulada vuelve a estar disponible: puede figurar en más de una apuesta.
+  freeBetId          String?     @db.Uuid
+  live               Boolean     @default(false)
+  deviceId           String?
+  ip                 String
+  acceptedAt         DateTime    @default(now())
+  settledAt          DateTime?
+
+  selections  BetSelection[]
+  settlements BetSettlement[]
+  debts       BetDebt[]
+
+  @@unique([userId, requestKey])
+  @@index([userId, acceptedAt])
+  @@index([status])
+}
+
+model BetSelection {
+  id             String          @id @default(uuid()) @db.Uuid
+  betId          String          @db.Uuid
+  bet            Bet             @relation(fields: [betId], references: [id], onDelete: Restrict)
+  selectionId    String
+  marketId       String
+  matchId        String
+  /// Centésimas, congelada al aceptar (ya con el aumento de cuota si aplica).
+  odds           Int
+  status         SelectionStatus @default(PENDING)
+  resultVersion  Int             @default(0)
+  matchLabel     String
+  marketLabel    String
+  selectionLabel String
+  startsAt       DateTime
+
+  /// Selecciones de partidos distintos.
+  @@unique([betId, matchId])
+  @@index([selectionId])
+  @@index([marketId])
+  @@index([matchId])
+}
+
+// ── Liquidación ──────────────────────────────────────────────────────────────
+
+enum MatchEventType {
+  MARKET_RESULTED
+  MATCH_STATUS_CHANGED
+  RESULT_CORRECTED
+}
+
+/// Inmutable salvo processedAt. Garantiza que ningún evento se procese dos veces ni se pierda.
+model MatchEvent {
+  id            String          @id @default(uuid()) @db.Uuid
+  sourceEventId String          @unique
+  type          MatchEventType
+  matchId       String
+  marketId      String?
+  payload       Json
+  receivedAt    DateTime        @default(now())
+  processedAt   DateTime?
+  settlements   BetSettlement[]
+
+  @@index([matchId])
+}
+
+/// Una fila por versión de liquidación de una apuesta. Inmutable.
+model BetSettlement {
+  id                   String     @id @default(uuid()) @db.Uuid
+  betId                String     @db.Uuid
+  bet                  Bet        @relation(fields: [betId], references: [id], onDelete: Restrict)
+  version              Int
+  outcome              BetStatus
+  /// Centavos acreditados en esta versión.
+  payout               Int
+  /// Centavos revertidos de la versión anterior.
+  reversedAmount       Int        @default(0)
+  matchEventId         String     @db.Uuid
+  matchEvent           MatchEvent @relation(fields: [matchEventId], references: [id], onDelete: Restrict)
+  ledgerTransactionIds String[]
+  createdAt            DateTime   @default(now())
+
+  @@unique([betId, version])
+}
+
+enum HoldStatus {
+  SUSPENDED
+  POSTPONED
+}
+
+enum HoldResolution {
+  RESUMED
+  VOIDED
+  CANCELLED
+}
+
+/// Partido suspendido o aplazado en espera de reanudación.
+model MatchHold {
+  matchId    String          @id
+  status     HoldStatus
+  /// Inicio programado + plazo configurado.
+  deadline   DateTime
+  resolvedAt DateTime?
+  resolution HoldResolution?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([resolvedAt, deadline])
+}
+
+/// Diferencia pendiente tras una re-liquidación (research R7).
+model BetDebt {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  betId     String    @db.Uuid
+  bet       Bet       @relation(fields: [betId], references: [id], onDelete: Restrict)
+  amount    Int
+  collected Int       @default(0)
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+
+  @@index([userId, closedAt])
+}
+
+/// Ajustes configurables (límites, retardos, plazos, umbrales). Valores por defecto en código.
+model BettingSetting {
+  key         String   @id
+  value       Json
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Promociones ──────────────────────────────────────────────────────────────
+
+enum CouponType {
+  DEPOSIT_BONUS
+  FREE_BET
+  ODDS_BOOST
+}
+
+enum CouponStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum RedemptionStatus {
+  AWAITING_DEPOSIT
+  GRANTED
+  AVAILABLE
+  USED
+  EXPIRED
+}
+
+model Coupon {
+  id           String             @id @default(uuid()) @db.Uuid
+  code         String             @unique
+  type         CouponType
+  /// % (DEPOSIT_BONUS, ODDS_BOOST) o centavos (FREE_BET).
+  value        Int
+  /// Tope: centavos (bono) o centésimas de cuota (aumento).
+  cap          Int?
+  startsAt     DateTime
+  endsAt       DateTime
+  totalLimit   Int
+  perUserLimit Int                @default(1)
+  /// Contador bajo FOR UPDATE: el cupo total se respeta con canjes simultáneos.
+  redeemed     Int                @default(0)
+  status       CouponStatus       @default(ACTIVE)
+  createdById  String             @db.Uuid
+  createdAt    DateTime           @default(now())
+  redemptions  CouponRedemption[]
+}
+
+model CouponRedemption {
+  id        String           @id @default(uuid()) @db.Uuid
+  couponId  String           @db.Uuid
+  coupon    Coupon           @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  userId    String           @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  deviceId  String
+  /// Hash del titular de pago (spec 2); NULL no colisiona en el índice único.
+  payerKey  String?
+  status    RedemptionStatus
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  bonus     Bonus?
+  freeBet   FreeBet?
+
+  @@unique([couponId, userId])
+  @@unique([couponId, deviceId])
+  @@unique([couponId, payerKey])
+}
+
+enum BonusStatus {
+  ACTIVE
+  CONVERTED
+  EXPIRED
+}
+
+/// Un solo ACTIVE por usuario (índice parcial en la migración).
+model Bonus {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String            @db.Uuid
+  user          User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  redemptionId  String?           @unique @db.Uuid
+  redemption    CouponRedemption? @relation(fields: [redemptionId], references: [id], onDelete: Restrict)
+  amount        Int
+  wagerRequired Int
+  wagerProgress Int               @default(0)
+  expiresAt     DateTime
+  status        BonusStatus       @default(ACTIVE)
+  createdAt     DateTime          @default(now())
+  closedAt      DateTime?
+
+  @@index([status, expiresAt])
+}
+
+model FreeBet {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  user         User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  redemptionId String           @unique @db.Uuid
+  redemption   CouponRedemption @relation(fields: [redemptionId], references: [id], onDelete: Restrict)
+  amount       Int
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([userId, usedAt])
+}
+
+// ── Fraude ───────────────────────────────────────────────────────────────────
+
+enum FraudRule {
+  MULTI_ACCOUNT
+  ANOMALOUS_STAKE
+  ODDS_DROP_PATTERN
+  MIRROR_BETS
+  WITHDRAWAL_NO_ACTIVITY
+  RESETTLEMENT_DEBT
+}
+
+enum FraudSeverity {
+  MEDIUM
+  HIGH
+}
+
+enum AlertStatus {
+  OPEN
+  DISMISSED
+  CONFIRMED
+}
+
+/// Una sola alerta OPEN por (rule, subjectKey) (índice parcial en la migración). No se borra.
+model FraudAlert {
+  id           String        @id @default(uuid()) @db.Uuid
+  rule         FraudRule
+  severity     FraudSeverity
+  /// p. ej. "device:<id>" o "user:<id>".
+  subjectKey   String
+  userIds      String[]      @db.Uuid
+  evidence     Json
+  status       AlertStatus   @default(OPEN)
+  resolvedById String?       @db.Uuid
+  resolution   String?
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+
+  @@index([status, createdAt])
+}
+
+// ── Partidos, mercados y cuotas (spec 3) ─────────────────────────────────────
+
+model Competition {
+  id            String   @id @default(uuid()) @db.Uuid
+  apiFootballId Int?     @unique
+  name          String
+  country       String?
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  matches       Match[]
+}
+
+model Team {
+  id            String   @id @default(uuid()) @db.Uuid
+  apiFootballId Int?     @unique
+  name          String
+  logoUrl       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  homeMatches   Match[]  @relation("HomeTeam")
+  awayMatches   Match[]  @relation("AwayTeam")
+}
+
+model Match {
+  id            String       @id @default(uuid()) @db.Uuid
+  apiFootballId Int?         @unique
+  competitionId String?      @db.Uuid
+  competition   Competition? @relation(fields: [competitionId], references: [id], onDelete: Restrict)
+  homeTeamId    String       @db.Uuid
+  homeTeam      Team         @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict)
+  awayTeamId    String       @db.Uuid
+  awayTeam      Team         @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict)
+  kickoffAt     DateTime
+  status        MatchStatus  @default(SCHEDULED)
+  statusSource  OddsSource   @default(MANUAL)
+  homeScore     Int?
+  awayScore     Int?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  markets       Market[]
+
+  @@index([status, kickoffAt])
+  @@index([competitionId, kickoffAt])
+}
+
+model Market {
+  id         String       @id @default(uuid()) @db.Uuid
+  matchId    String       @db.Uuid
+  match      Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  type       MarketType
+  line       Decimal?     @db.Decimal(6, 2)
+  status     MarketStatus @default(OPEN)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  selections Selection[]
+
+  @@unique([matchId, type, line])
+  @@index([matchId, status])
+}
+
+model Selection {
+  id        String        @id @default(uuid()) @db.Uuid
+  marketId  String        @db.Uuid
+  market    Market        @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  key       String
+  label     String
+  source    OddsSource
+  odds      Decimal       @db.Decimal(8, 3)
+  isActive  Boolean       @default(true)
+  updatedAt DateTime      @updatedAt
+  history   OddsHistory[]
+
+  @@unique([marketId, key, source])
+  @@index([marketId, isActive])
+}
+
+model OddsHistory {
+  id           String     @id @default(uuid()) @db.Uuid
+  selectionId  String     @db.Uuid
+  selection    Selection  @relation(fields: [selectionId], references: [id], onDelete: Restrict)
+  source       OddsSource
+  previousOdds Decimal?   @db.Decimal(8, 3)
+  newOdds      Decimal    @db.Decimal(8, 3)
+  changedById  String?    @db.Uuid
+  createdAt    DateTime   @default(now())
+
+  @@index([selectionId, createdAt])
+}
+
+model ApiRequestBudget {
+  day       DateTime @id @db.Date
+  limit     Int
+  consumed  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

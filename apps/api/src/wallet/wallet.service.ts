@@ -59,8 +59,9 @@ export class WalletService implements WalletPort {
     private readonly ledger: LedgerService,
   ) {}
 
-  async getBalances(userId: string): Promise<Balances> {
-    const rows = await this.prisma.$queryRaw<{ type: string; balance: bigint | null }[]>`
+  /** Con `tx`, lee dentro de la transacción del llamador (p. ej. con la billetera ya bloqueada). */
+  async getBalances(userId: string, tx: Tx = this.prisma): Promise<Balances> {
+    const rows = await tx.$queryRaw<{ type: string; balance: bigint | null }[]>`
       SELECT a.type::text AS type, SUM(p.amount) AS balance
       FROM "LedgerAccount" a
       LEFT JOIN "LedgerPosting" p ON p."accountId" = a.id

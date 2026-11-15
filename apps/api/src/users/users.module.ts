@@ -5,5 +5,7 @@ import { UsersAdminService } from './users-admin.service';
 @Module({
   controllers: [UsersAdminController],
   providers: [UsersAdminService],
+  // Spec 4: la resolución de alertas de fraude suspende cuentas con este servicio.
+  exports: [UsersAdminService],
 })
 export class UsersModule {}

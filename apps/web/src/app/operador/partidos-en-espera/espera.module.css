@@ -1,0 +1,55 @@
+.page {
+  display: grid;
+  gap: 2rem;
+  max-width: 40rem;
+}
+
+.group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.group > h2 {
+  font-size: var(--step-1);
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: 0.375rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.item[data-state='waiting'] {
+  border-left-color: var(--card-yellow);
+}
+
+.head {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.head h3 {
+  font-size: var(--step-1);
+}
+
+.status {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.deadline strong {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-variant-numeric: tabular-nums;
+}

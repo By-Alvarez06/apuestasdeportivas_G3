@@ -10,8 +10,8 @@ Fuente: fases de [`PLAN.md`](../PLAN.md). Reglas: [constitución](../.specify/me
 |---|------|---------|-------------|---------|------------|--------|
 | 1 | `feature/spec-1` | `specs/001-fundaciones-monorepo` | Líder | Monorepo con las tres apps (web, api, reports), paquete compartido, Docker (PostgreSQL + Redis), CI, convenciones de commits | — | Terminada |
 | 2 | `feature/spec-2` | `specs/002-cuentas-billetera` | Kevin Robles (@Kevrc) | Registro, login, 2FA, roles (RBAC), bloqueo por intentos fallidos, auditoría; ledger de doble entrada con saldo real y de bono; depósitos con Payphone sandbox (confirmación servidor a servidor); retiros con 2FA, mismo titular y revisión manual | 1 | Terminada |
-| 3 | `feature/spec-3` | `specs/003-partidos-mercados` | — | Partidos y máquina de estados, mercados y cuotas, gestión del operador; worker de API-Football con presupuesto diario y frecuencia adaptativa; servicio de reportes en Python con dashboard y exportación CSV/PDF | 1 | Pendiente |
-| 4 | `feature/spec-4` | `specs/004-apuestas-liquidacion` | — | Apuestas simples y combinadas (aceptación atómica, cuota congelada, límites); liquidación idempotente en tiempo real por WebSocket; suspensiones y aplazamientos (reembolso, cuota 1.00 en combinadas); promociones y cupones; detección de fraude | 2, 3 | Pendiente |
+| 3 | `feature/spec-3` | `specs/003-partidos-mercados` | — | Partidos y máquina de estados, mercados y cuotas, gestión del operador; worker de API-Football con presupuesto diario y frecuencia adaptativa; servicio de reportes en Python con dashboard y exportación CSV/PDF | 1 | Terminada |
+| 4 | `feature/spec-4` | `specs/004-apuestas-liquidacion` | Jeimy Torres (@jeimytorresg) | Apuestas simples y combinadas (aceptación atómica, cuota congelada, límites); liquidación idempotente en tiempo real por WebSocket; suspensiones y aplazamientos (reembolso, cuota 1.00 en combinadas); promociones y cupones; detección de fraude | 2, 3 | Terminada |
 
 Specs 2 y 3 pueden avanzar en paralelo. La spec 4 necesita la billetera (2) y los partidos y
 mercados (3); mientras no estén integradas, trabaja contra interfaces simuladas.

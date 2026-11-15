@@ -1,0 +1,164 @@
+.page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 40rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter {
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.75rem;
+  padding: 0.25rem 1rem;
+  color: var(--pitch);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  cursor: pointer;
+}
+
+.filter[aria-pressed='true'] {
+  color: var(--chalk);
+  background: var(--pitch);
+  border-color: var(--pitch);
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* El borde izquierdo lleva el estado, como los avisos: césped gana, roja pierde, línea reembolsa. */
+.card {
+  display: grid;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.card[data-status='OPEN'] {
+  border-left-color: var(--card-yellow);
+}
+
+.card[data-status='WON'] {
+  border-left-color: var(--pitch);
+}
+
+.card[data-status='LOST'] {
+  border-left-color: var(--card-red);
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.status {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+}
+
+.selections {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0;
+  list-style: none;
+}
+
+.selection {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.selectionName {
+  font-weight: 600;
+}
+
+.selection .muted {
+  font-size: var(--step--1);
+}
+
+.selectionSide {
+  display: grid;
+  justify-items: end;
+  align-content: start;
+}
+
+.odds {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.selectionStatus {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.selectionStatus[data-status='WON'] {
+  color: var(--pitch);
+}
+
+.selectionStatus[data-status='LOST'] {
+  color: var(--card-red);
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--line);
+}
+
+.figures dt {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.figures dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.result dd {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.date {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Selección en espera: tarjeta amarilla, como los avisos. */
+.hold {
+  margin-top: 0.25rem;
+  padding-left: 0.625rem;
+  font-size: var(--step--1);
+  border-left: 3px solid var(--card-yellow);
+}

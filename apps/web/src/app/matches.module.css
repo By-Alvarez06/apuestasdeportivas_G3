@@ -1,0 +1,233 @@
+.page {
+  width: 100%;
+  max-width: 70rem;
+  margin-inline: auto;
+  padding: 2rem 1.25rem 4rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.filters :global(.field) {
+  min-width: 10rem;
+}
+
+.filters input,
+.filters select,
+.inline input,
+.inline select {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1rem;
+}
+
+.fixtureList {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.card {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+}
+
+.matchCard {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.matchCard:hover {
+  border-color: var(--pitch);
+  box-shadow: 0 0.25rem 1rem color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.matchCard:focus-visible {
+  outline: 3px solid var(--pitch);
+  outline-offset: 3px;
+}
+
+.matchCardAction {
+  width: fit-content;
+  color: var(--pitch);
+  font-weight: 600;
+}
+
+.card h2,
+.card h3,
+.card p {
+  margin: 0;
+}
+
+.teams {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 700;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.fixtureTeams {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.fixtureTeam {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2rem;
+}
+
+.crest,
+.crestFallback {
+  display: grid;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  object-fit: contain;
+}
+
+.crestFallback {
+  color: var(--ink-soft);
+  background: var(--chalk);
+  border-radius: 50%;
+  font-size: var(--step--1);
+  font-weight: 700;
+}
+
+.teamName {
+  font-weight: 600;
+}
+
+.teamScore {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.markets {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.market {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.selections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.selection {
+  display: inline-flex;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--chalk);
+  border-radius: var(--radius-field);
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 0.75rem;
+}
+
+.section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-field);
+  background: var(--surface);
+}
+
+.section h2,
+.section h3 {
+  margin: 0;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+
+.table th,
+.table td {
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+
+.table input,
+.table select {
+  min-width: 5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem;
+  font: inherit;
+}
+
+.links {
+  display: flex;
+  gap: 1rem;
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}

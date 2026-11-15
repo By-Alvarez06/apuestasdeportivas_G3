@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { PORTS } from '@apuestas/shared';
+import { deviceId } from './common/device-id.middleware';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { originCheck } from './common/origin-check.middleware';
 
@@ -17,6 +18,7 @@ export function configureApp(app: NestExpressApplication): void {
   app.use(helmet());
   app.enableCors({ origin: webUrl, credentials: true });
   app.use(cookieParser());
+  app.use(deviceId(app.get(ConfigService).get('NODE_ENV') === 'production'));
   app.use(originCheck(webUrl));
   // Rechaza campos que no estén en el DTO: el cliente no puede colar montos, roles ni estados.
   app.useGlobalPipes(
