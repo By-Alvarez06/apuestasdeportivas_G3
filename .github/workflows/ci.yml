@@ -30,8 +30,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Solo TypeScript: el Python de apps/reports se revisa con Ruff en el job lint-python (este
+      # job no instala uv, que usan los scripts de reports).
       - name: Lint (TypeScript)
-        run: pnpm lint
+        run: pnpm turbo run lint --filter=!@apuestas/reports
 
       - name: Typecheck
         run: pnpm typecheck
