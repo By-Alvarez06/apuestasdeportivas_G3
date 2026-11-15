@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     // Se compila a CommonJS porque la API corre con `node dist/main` y no puede cargar .ts.
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "noEmit": false,
     "incremental": false,
     "outDir": "./dist",

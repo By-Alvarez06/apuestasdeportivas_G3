@@ -41,8 +41,8 @@
 - El límite aprobado por el equipo es de 100 solicitudes diarias. Se verificó el endpoint de cuotas
   de Pinnacle (ID 4), se importaron 817 partidos y quedaron 180 selecciones externas persistidas.
   La última lectura del contador local fue 11/100; después se observó 98 % de uso en el panel del
-  proveedor y se dejó `API_FOOTBALL_DAILY_BUDGET` vacío para detener nuevas llamadas hasta que el
-  equipo confirme que la cuota se restableció.
+  proveedor. El entorno local vuelve a usar `API_FOOTBALL_DAILY_BUDGET=100` y la clave
+  configurada en `.env` para reanudar la sincronización.
 - Dashboard, CSV UTF-8 y PDF se comprobaron contra esos datos reales: las tres respuestas dieron
   HTTP 200 y las exportaciones tuvieron el formato esperado.
 - Se levantaron web, API y reportes; sus comprobaciones de salud respondieron HTTP 200, la API
