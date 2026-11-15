@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feature/spec-3`
 **Created**: 2026-11-14
-**Status**: In progress
+**Status**: Terminada
 **Input**: Catálogo `specs/README.md`, fase F3 de `PLAN.md` y decisiones confirmadas por el equipo.
 
 ## Alcance confirmado

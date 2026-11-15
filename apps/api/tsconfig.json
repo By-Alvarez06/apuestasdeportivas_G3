@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
@@ -10,8 +10,7 @@
     "experimentalDecorators": true,
     "noEmit": false,
     "incremental": false,
-    "sourceMap": true,
-    "baseUrl": "./"
+    "sourceMap": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "test"]
