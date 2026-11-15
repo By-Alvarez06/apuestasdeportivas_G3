@@ -1,9 +1,10 @@
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import type { Job } from 'bullmq';
+import type { Job, Queue } from 'bullmq';
 import type { MatchEventJob } from '../catalog/match-catalog.port';
 import { Prisma, type MatchEvent } from '../generated/prisma/client';
 import { MatchEventType } from '../generated/prisma/enums';
+import { type FraudCheck, queueFraudCheck } from '../fraud/fraud-checks';
 import { PrismaService } from '../prisma/prisma.service';
 import { QUEUES } from '../queues/queue-names';
 import { NotifierService } from '../realtime/notifier.service';
@@ -24,6 +25,7 @@ export class SettlementProcessor extends WorkerHost {
     private readonly settlement: SettlementService,
     private readonly holds: HoldsService,
     private readonly notifier: NotifierService,
+    @InjectQueue(QUEUES.FRAUD_CHECKS) private readonly fraudChecks: Queue<FraudCheck>,
   ) {
     super();
   }
@@ -50,6 +52,10 @@ export class SettlementProcessor extends WorkerHost {
       data: { processedAt: new Date() },
     });
     await this.notifier.betsChanged(changed);
+    // FR-034: una re-liquidación que dejó deuda genera una alerta.
+    for (const c of changed)
+      if (c.debt && c.debt > 0)
+        await queueFraudCheck(this.fraudChecks, { kind: 'debt', betId: c.bet.id }, this.logger);
 
     const latencyMs = Date.now() - Date.parse(job.data.occurredAt);
     if (changed.length > 0 && Number.isFinite(latencyMs))

@@ -8,6 +8,7 @@ import { BettingModule } from './betting/betting.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { AccessModule } from './common/auth/access.module';
 import { DepositsModule } from './deposits/deposits.module';
+import { FraudModule } from './fraud/fraud.module';
 import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -47,6 +48,7 @@ import { WithdrawalsModule } from './withdrawals/withdrawals.module';
     RealtimeModule,
     SettlementModule,
     PromotionsModule,
+    FraudModule,
     HealthModule,
   ],
 })

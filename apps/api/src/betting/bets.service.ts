@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { Inject, Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 import { fromCents, parseOdds, toCents } from '@apuestas/shared';
 import { AuditService } from '../audit/audit.service';
 import { DomainError, notFound, validationError } from '../common/errors/domain-error';
@@ -18,7 +20,9 @@ import {
   RedemptionStatus,
   StakeSource,
 } from '../generated/prisma/enums';
+import { type FraudCheck, queueFraudCheck } from '../fraud/fraud-checks';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUES } from '../queues/queue-names';
 import { couponInvalid } from '../promotions/coupon-errors';
 import { DebtService } from '../settlement/debt.service';
 import { IdempotencyConflictError, WalletNotFoundError } from '../wallet/wallet.port';
@@ -95,6 +99,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 @Injectable()
 export class BetsService {
+  private readonly logger = new Logger(BetsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly wallet: WalletService,
@@ -102,6 +108,7 @@ export class BetsService {
     private readonly settings: BettingSettingsService,
     private readonly debts: DebtService,
     @Inject(MATCH_CATALOG) private readonly catalog: MatchCatalogPort,
+    @InjectQueue(QUEUES.FRAUD_CHECKS) private readonly fraudChecks: Queue<FraudCheck>,
   ) {}
 
   /** Devuelve la apuesta y si se creó ahora (false = la clave ya existía con los mismos datos). */
@@ -148,6 +155,8 @@ export class BetsService {
         promo,
         ctx,
       );
+      // FR-034: montos anómalos, apuestas espejo y cuentas múltiples se revisan al instante.
+      await queueFraudCheck(this.fraudChecks, { kind: 'bet', id: bet.id }, this.logger);
       return { bet: toBetView(bet), created: true };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

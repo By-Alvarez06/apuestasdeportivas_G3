@@ -66,8 +66,13 @@ día calendario de Ecuador (UTC-5) y solo suma apuestas con saldo real o de bono
 | Método | Ruta | Rol | Notas | Respuesta |
 |--------|------|-----|-------|-----------|
 | GET | `/admin/fraud-alerts` | A | `?status=&rule=&page=` | lista paginada |
-| GET | `/admin/fraud-alerts/:id` | A | — | alerta con evidencia y cuentas enlazadas |
-| POST | `/admin/fraud-alerts/:id/resolve` | A | `{ decision: "DISMISSED"\|"CONFIRMED", reason, suspendUsers?: boolean }` | 200; audita y, si se pide, suspende con el servicio de usuarios de la spec 2 |
+| GET | `/admin/fraud-alerts/:id` | A | — | alerta con evidencia y `users: [{ id, email, status, role, createdAt }]` |
+| POST | `/admin/fraud-alerts/:id/resolve` | A | `{ decision: "DISMISSED"\|"CONFIRMED", reason (3–500), suspendUsers?: boolean }` | 200; audita y, si se pide, suspende a los apostadores con el servicio de usuarios de la spec 2; 409 si ya estaba resuelta |
+
+Severidades: `MULTI_ACCOUNT` por dispositivo o titular de pago, `MIRROR_BETS` y `RESETTLEMENT_DEBT`
+son altas (bloquean canjes, FR-037); `MULTI_ACCOUNT` por IP (umbral `fraud.multiAccountIpMin`, 10 por
+defecto: las redes compartidas son comunes), `ANOMALOUS_STAKE`, `ODDS_DROP_PATTERN` y
+`WITHDRAWAL_NO_ACTIVITY` son medias.
 
 ## Auditoría (acciones nuevas)
 

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 import { ErrorCode, fromCents, toCents } from '@apuestas/shared';
 import { AuditService } from '../audit/audit.service';
 import { DomainError, notFound, validationError } from '../common/errors/domain-error';
@@ -14,7 +16,9 @@ import {
   FraudSeverity,
   RedemptionStatus,
 } from '../generated/prisma/enums';
+import { type FraudCheck, queueFraudCheck } from '../fraud/fraud-checks';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUES } from '../queues/queue-names';
 import {
   type AlreadyUsedBy,
   bonusActive,
@@ -38,9 +42,12 @@ export interface RedemptionView {
  */
 @Injectable()
 export class CouponsService {
+  private readonly logger = new Logger(CouponsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    @InjectQueue(QUEUES.FRAUD_CHECKS) private readonly fraudChecks: Queue<FraudCheck>,
   ) {}
 
   // ── Operador ────────────────────────────────────────────────────────────────
@@ -160,7 +167,7 @@ export class CouponsService {
     const code = rawCode.trim().toUpperCase();
     const payerKey = await this.payerKeyOf(userId);
     try {
-      return await this.prisma.$transaction(
+      const result = await this.prisma.$transaction(
         async (tx) => {
           // Bloquea el cupón: los canjes simultáneos se serializan y el cupo nunca se supera.
           const locked = await tx.$queryRaw<{ id: string }[]>`
@@ -254,6 +261,13 @@ export class CouponsService {
         },
         { maxWait: 15_000, timeout: 15_000 },
       );
+      // FR-034: cuentas múltiples por dispositivo o titular de pago.
+      await queueFraudCheck(
+        this.fraudChecks,
+        { kind: 'redemption', id: result.redemptionId },
+        this.logger,
+      );
+      return result;
     } catch (error) {
       const rejected =
         error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'

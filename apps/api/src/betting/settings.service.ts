@@ -84,6 +84,12 @@ export const SETTING_RULES = {
     max: 50,
     description: 'Cuentas que comparten dispositivo, IP o titular',
   },
+  'fraud.multiAccountIpMin': {
+    default: 10,
+    min: 2,
+    max: 1000,
+    description: 'Cuentas que comparten IP de sesión en 7 días (redes compartidas: umbral alto)',
+  },
   'fraud.anomalousStakeFactor': {
     default: 5,
     min: 2,

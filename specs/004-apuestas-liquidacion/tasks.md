@@ -249,14 +249,14 @@ correcta; la actividad normal no genera alertas.
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T062 [P] [US6] Pruebas unitarias de cada regla pura de R11 con casos positivos y negativos (umbral justo por debajo y por encima) en `apps/api/src/fraud/rules/*.spec.ts`
-- [ ] T063 [P] [US6] Pruebas de integración: cada patrón (3 cuentas mismo `device_id`, mismo titular de pago, monto anómalo, apuestas espejo, retiro tras depósito sin actividad, deuda por re-liquidación) genera una alerta deduplicada; un conjunto de actividad normal no genera ninguna (SC-009); alerta alta abierta bloquea canjes con `COUPON_BLOCKED`; solo administrador consulta y resuelve (apostador y operador → 403); resolver exige motivo, audita y puede suspender las cuentas, en `apps/api/test/fraud.e2e-spec.ts`
+- [X] T062 [P] [US6] Pruebas unitarias de cada regla pura de R11 con casos positivos y negativos (umbral justo por debajo y por encima) en `apps/api/src/fraud/rules/*.spec.ts`
+- [X] T063 [P] [US6] Pruebas de integración: cada patrón (3 cuentas mismo `device_id`, mismo titular de pago, monto anómalo, apuestas espejo, retiro tras depósito sin actividad, deuda por re-liquidación) genera una alerta deduplicada; un conjunto de actividad normal no genera ninguna (SC-009); alerta alta abierta bloquea canjes con `COUPON_BLOCKED`; solo administrador consulta y resuelve (apostador y operador → 403); resolver exige motivo, audita y puede suspender las cuentas, en `apps/api/test/fraud.e2e-spec.ts`
 
 ### Implementation for User Story 6
 
-- [ ] T064 [P] [US6] Implementar las reglas `multi-account`, `anomalous-stake`, `odds-drop-pattern` (con `MATCH_CATALOG.oddsHistory`), `mirror-bets`, `withdrawal-no-activity` y `resettlement-debt` como funciones puras con umbrales de `BettingSettingsService` en `apps/api/src/fraud/rules/`
-- [ ] T065 [US6] Implementar `FraudService` (crear alerta deduplicada por `(rule, subjectKey)`, auditar `fraud.alert.created`, `hasOpenHighAlert(userId)`) y `FraudProcessor` (cola `fraud-checks` encolada tras aceptar apuesta, canjear cupón y crear deuda; cron de 5 min para cuentas múltiples y retiros) en `apps/api/src/fraud/`; usar `hasOpenHighAlert` en `CouponsService.redeem`
-- [ ] T066 [US6] Crear `FraudAdminController` (`GET /admin/fraud-alerts`, `GET /admin/fraud-alerts/:id`, `POST /admin/fraud-alerts/:id/resolve` con suspensión opcional mediante el servicio de usuarios de la spec 2) y `FraudModule` en `apps/api/src/fraud/`
+- [X] T064 [P] [US6] Implementar las reglas `multi-account`, `anomalous-stake`, `odds-drop-pattern` (con `MATCH_CATALOG.oddsHistory`), `mirror-bets`, `withdrawal-no-activity` y `resettlement-debt` como funciones puras con umbrales de `BettingSettingsService` en `apps/api/src/fraud/rules/`
+- [X] T065 [US6] Implementar `FraudService` (crear alerta deduplicada por `(rule, subjectKey)`, auditar `fraud.alert.created`, `hasOpenHighAlert(userId)`) y `FraudProcessor` (cola `fraud-checks` encolada tras aceptar apuesta, canjear cupón y crear deuda; cron de 5 min para cuentas múltiples y retiros) en `apps/api/src/fraud/`; usar `hasOpenHighAlert` en `CouponsService.redeem`
+- [X] T066 [US6] Crear `FraudAdminController` (`GET /admin/fraud-alerts`, `GET /admin/fraud-alerts/:id`, `POST /admin/fraud-alerts/:id/resolve` con suspensión opcional mediante el servicio de usuarios de la spec 2) y `FraudModule` en `apps/api/src/fraud/`
 
 🔖 Commit: `feat(api): detección de fraude con alertas para administradores`
 
