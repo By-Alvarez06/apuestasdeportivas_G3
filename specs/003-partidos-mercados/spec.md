@@ -15,6 +15,8 @@
 - Dashboard operacional de partidos, cuotas y actividad, con CSV y PDF para los mismos filtros.
 - El equipo confirmó un límite de 100 solicitudes diarias para la configuración local. Sin un
   límite positivo explícito, la sincronización externa no realiza peticiones.
+- En el entorno local se verificó acceso a cuotas de Pinnacle (bookmaker ID 4), configurado para
+  la sincronización.
 
 ## Actores y permisos
 

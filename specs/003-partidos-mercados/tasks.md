@@ -31,17 +31,20 @@
 ## Validación y pendientes de entorno
 
 - Pasan las 73 pruebas unitarias de API y las e2e de Spec 3: partidos (10), presupuesto (3),
-  sincronización (6) y acceso a reportes (1). También pasan las 6 pruebas Python, Ruff, lint,
-  typecheck, build de API y build de producción web.
+  sincronización (7, incluida concurrencia de cuotas) y acceso a reportes (1). También pasan las 7
+  pruebas Python, Ruff, lint, typecheck, build de API y build de producción web.
 - La suite e2e API completa ejecutó 17 suites: 16 pasaron y falló una prueba ajena a Spec 3 en
   `admin.e2e-spec.ts` (esperaba 409 y recibió 403 al retirar simultáneamente el rol de dos
   administradores). No se modificó esa funcionalidad fuera de alcance.
 - T011 se verificó en la base local: el rol `apuestas_reports` puede consultar y la prueba confirma
   que no puede modificar tablas.
 - El presupuesto local de API-Football se configuró en 100 solicitudes diarias, según el límite
-  confirmado por el equipo. Se verificaron fixtures y el catálogo de 33 bookmakers usando dos
-  solicitudes; el contador local quedó en 2/100.
-- Las cuotas externas siguen desactivadas hasta que el equipo elija un bookmaker del catálogo
-  permitido por su plan.
+  confirmado por el equipo. Se verificó el endpoint de cuotas de Pinnacle (ID 4), se importaron
+  817 partidos y quedaron 180 selecciones externas persistidas; el uso registrado fue de 11/100
+  solicitudes en el día UTC de la prueba.
+- Dashboard, CSV UTF-8 y PDF se comprobaron contra esos datos reales: las tres respuestas dieron
+  HTTP 200 y las exportaciones tuvieron el formato esperado.
+- Se levantaron web, API y reportes; sus comprobaciones de salud respondieron HTTP 200, la API
+  devolvió partidos y las páginas pública, de operador y de reportes respondieron HTTP 200.
 - El entorno e2e fuerza credenciales de proveedor vacías y una clave TOTP temporal de pruebas para
   no heredar secretos ni placeholders del `.env` local.
