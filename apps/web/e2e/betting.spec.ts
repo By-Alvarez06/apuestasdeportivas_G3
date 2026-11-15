@@ -216,3 +216,53 @@ test('el administrador abre la bandeja de alertas de fraude; un apostador no', a
   await page.goto('/admin/fraude');
   await expect(page.getByText('No tienes acceso a esta sección.')).toBeVisible();
 });
+
+test('las pantallas de la spec 4 se usan a 360 px y todos sus controles tienen nombre', async ({
+  browser,
+  page,
+}) => {
+  // Registro, depósito y siete pantallas: más que el límite por defecto de 30 s.
+  test.setTimeout(120_000);
+
+  /** Sin scroll horizontal y sin botones, enlaces ni campos sin nombre accesible. */
+  async function check(p: Page, path: string) {
+    await p.setViewportSize({ width: 360, height: 740 });
+    await p.goto(path);
+    await expect(p.getByRole('heading', { level: 1 })).toBeVisible();
+    const overflow = await p.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `${path} no debe tener scroll horizontal`).toBeLessThanOrEqual(0);
+    const unnamed = await p.evaluate(() =>
+      [...document.querySelectorAll('button, a[href], input, select, textarea')]
+        .filter((el) => {
+          const e = el as HTMLElement;
+          if (e.offsetParent === null || (e as HTMLInputElement).type === 'hidden') return false;
+          const labelled =
+            e.getAttribute('aria-label') ||
+            e.getAttribute('aria-labelledby') ||
+            (e.id && document.querySelector(`label[for="${e.id}"]`)) ||
+            e.closest('label');
+          return !labelled && !e.textContent?.trim();
+        })
+        .map((e) => e.outerHTML.slice(0, 80)),
+    );
+    expect(unnamed, `${path}: controles sin nombre`).toEqual([]);
+  }
+
+  await newBettorWith25(page);
+  await page.goto('/apuestas');
+  await page.getByRole('button', { name: /Macará\s*1\.80/ }).click();
+  for (const path of ['/apuestas', '/mis-apuestas', '/promociones']) await check(page, path);
+
+  const adminContext = await browser.newContext({ storageState: await operator.storageState() });
+  const adminPage = await adminContext.newPage();
+  for (const path of [
+    '/operador/ajustes',
+    '/operador/cupones',
+    '/operador/partidos-en-espera',
+    '/admin/fraude',
+  ])
+    await check(adminPage, path);
+  await adminContext.close();
+});

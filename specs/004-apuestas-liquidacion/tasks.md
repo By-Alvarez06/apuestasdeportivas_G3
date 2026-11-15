@@ -270,7 +270,7 @@ correcta; la actividad normal no genera alertas.
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T068 [P] Revisar las pantallas nuevas a 360 px y con teclado (foco visible, contraste AA, `aria-live`, movimiento reducido) y corregir lo necesario en `apps/web/src/app/`
+- [X] T068 [P] Revisar las pantallas nuevas a 360 px y con teclado (foco visible, contraste AA, `aria-live`, movimiento reducido) y corregir lo necesario en `apps/web/src/app/`
 - [ ] T069 [P] Medir la latencia resultado → pantalla en la E2E de T041 y en local con 50 apuestas abiertas; documentar el p95 obtenido (objetivo SC-004 ≤ 5 s) en [quickstart.md](quickstart.md)
 - [ ] T070 [P] Recorrer [quickstart.md](quickstart.md) de punta a punta y corregir pasos o comandos que no coincidan
 - [ ] T071 [P] Actualizar `CLAUDE.md` (comandos y notas no obvias: catálogo simulado, colas, Redis en pruebas) y marcar la spec 4 como "Terminada" con su responsable en `specs/README.md`
