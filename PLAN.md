@@ -103,11 +103,12 @@ peticiones nunca superan el presupuesto configurado y que presupuesto ausente im
 peticiones; gestión de operador y reportes aplican permisos/auditoría, y CSV/PDF respetan los
 mismos filtros. Alcance y reglas: [`specs/003-partidos-mercados/spec.md`](specs/003-partidos-mercados/spec.md).
 
-La implementación está en `feature/spec-3`. En el entorno local se configuró el presupuesto
-confirmado de 100 solicitudes diarias y se verificó la cuenta PostgreSQL de reportes de solo
+La implementación está en `feature/spec-3`. Se verificó la cuenta PostgreSQL de reportes de solo
 lectura. La API respondió a fixtures y cuotas de Pinnacle (ID 4); se importaron 817 partidos y se
-verificaron dashboard, CSV y PDF. Las pruebas dirigidas de Spec 3 pasan; la e2e completa deja un
-fallo ajeno a esta fase en la prueba de concurrencia de administradores.
+verificaron dashboard, CSV y PDF. Tras observar 98 % de uso en el panel del proveedor, el
+presupuesto local quedó vacío y el worker externo desactivado hasta que la cuota se restablezca.
+Las pruebas dirigidas de Spec 3 pasan; la e2e completa deja un fallo ajeno a esta fase en la prueba
+de concurrencia de administradores.
 
 ### F4 — Apuestas (S4)
 - [ ] Boleto de apuesta (bet slip) simple y combinada.

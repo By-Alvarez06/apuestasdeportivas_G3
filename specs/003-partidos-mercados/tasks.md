@@ -38,13 +38,16 @@
   administradores). No se modificó esa funcionalidad fuera de alcance.
 - T011 se verificó en la base local: el rol `apuestas_reports` puede consultar y la prueba confirma
   que no puede modificar tablas.
-- El presupuesto local de API-Football se configuró en 100 solicitudes diarias, según el límite
-  confirmado por el equipo. Se verificó el endpoint de cuotas de Pinnacle (ID 4), se importaron
-  817 partidos y quedaron 180 selecciones externas persistidas; el uso registrado fue de 11/100
-  solicitudes en el día UTC de la prueba.
+- El límite aprobado por el equipo es de 100 solicitudes diarias. Se verificó el endpoint de cuotas
+  de Pinnacle (ID 4), se importaron 817 partidos y quedaron 180 selecciones externas persistidas.
+  La última lectura del contador local fue 11/100; después se observó 98 % de uso en el panel del
+  proveedor y se dejó `API_FOOTBALL_DAILY_BUDGET` vacío para detener nuevas llamadas hasta que el
+  equipo confirme que la cuota se restableció.
 - Dashboard, CSV UTF-8 y PDF se comprobaron contra esos datos reales: las tres respuestas dieron
   HTTP 200 y las exportaciones tuvieron el formato esperado.
 - Se levantaron web, API y reportes; sus comprobaciones de salud respondieron HTTP 200, la API
   devolvió partidos y las páginas pública, de operador y de reportes respondieron HTTP 200.
+- Tras vaciar el presupuesto y reiniciar, web, API y reportes siguen respondiendo HTTP 200; el
+  worker de API-Football queda desactivado por la protección fail-closed.
 - El entorno e2e fuerza credenciales de proveedor vacías y una clave TOTP temporal de pruebas para
   no heredar secretos ni placeholders del `.env` local.
