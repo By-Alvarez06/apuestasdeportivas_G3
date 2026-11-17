@@ -119,7 +119,7 @@ describe('Partidos y mercados (spec 3)', () => {
       );
   });
 
-  it('publica próximos y en vivo solo cuando tienen cuotas abiertas', async () => {
+  it('publica dos partidos en vivo aunque aún no tengan cuotas abiertas', async () => {
     const upcomingId = await createMatch();
     const liveId = await createMatch();
     const liveWithoutOddsId = await createMatch();
@@ -142,12 +142,12 @@ describe('Partidos y mercados (spec 3)', () => {
     const ids = response.body.items.map((match: { id: string }) => match.id);
     expect(ids).toContain(upcomingId);
     expect(ids).toContain(liveId);
-    expect(ids).not.toContain(liveWithoutOddsId);
+    expect(ids).toContain(liveWithoutOddsId);
     expect(ids).not.toContain(withoutOddsId);
     expect(ids).not.toContain(finishedId);
   });
 
-  it('limita la cartelera a 10 próximos y 2 en vivo con cuotas abiertas', async () => {
+  it('pagina todos los próximos partidos que tienen cuotas abiertas', async () => {
     const matchIds: string[] = [];
     for (let index = 0; index < 21; index += 1) {
       const matchId = await createMatch();
@@ -174,8 +174,8 @@ describe('Partidos y mercados (spec 3)', () => {
 
     const response = await request(app.getHttpServer()).get('/matches?pageSize=100').expect(200);
 
-    expect(response.body).toMatchObject({ total: 10, pageSize: 12 });
-    expect(response.body.items).toHaveLength(10);
+    expect(response.body).toMatchObject({ total: 21, pageSize: 20 });
+    expect(response.body.items).toHaveLength(20);
     expect(
       response.body.items.every(
         (match: {
@@ -194,9 +194,15 @@ describe('Partidos y mercados (spec 3)', () => {
           ),
       ),
     ).toBe(true);
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/matches?page=2&pageSize=20')
+      .expect(200);
+    expect(secondPage.body).toMatchObject({ total: 21, page: 2, pageSize: 20 });
+    expect(secondPage.body.items).toHaveLength(1);
   });
 
-  it('ofrece competiciones y estados disponibles, incluyendo partidos en vivo sin cuotas', async () => {
+  it('muestra contadores solo para partidos apostables y excluye horarios pasados', async () => {
     const activeCompetition = await post(
       '/operator/competitions',
       { name: 'Liga con partidos', country: 'Ecuador' },
@@ -213,8 +219,12 @@ describe('Partidos y mercados (spec 3)', () => {
       operatorCookie,
       activeCompetition.body.id as string,
     );
+    const pastScheduledId = await createMatch(operatorCookie, activeCompetition.body.id as string);
+    const soonScheduledId = await createMatch(operatorCookie, activeCompetition.body.id as string);
     await addExternalOdds(upcomingId);
     await addExternalOdds(liveId);
+    await addExternalOdds(pastScheduledId);
+    await addExternalOdds(soonScheduledId);
     await prisma.match.update({
       where: { id: upcomingId },
       data: { kickoffAt: new Date('2099-01-20T20:00:00.000Z') },
@@ -233,6 +243,14 @@ describe('Partidos y mercados (spec 3)', () => {
         status: DbMatchStatus.LIVE,
       },
     });
+    await prisma.match.update({
+      where: { id: pastScheduledId },
+      data: { kickoffAt: new Date(Date.now() - 60 * 60 * 1000) },
+    });
+    await prisma.match.update({
+      where: { id: soonScheduledId },
+      data: { kickoffAt: new Date(Date.now() + 60 * 60 * 1000) },
+    });
     const noOddsId = await createMatch(operatorCookie, emptyCompetition.body.id as string);
     await prisma.match.update({
       where: { id: noOddsId },
@@ -241,8 +259,7 @@ describe('Partidos y mercados (spec 3)', () => {
 
     const filters = await request(app.getHttpServer()).get('/matches/filters').expect(200);
     expect(filters.body.competitions).toEqual([
-      expect.objectContaining({ id: activeCompetition.body.id, count: 3 }),
-      expect.objectContaining({ id: emptyCompetition.body.id, count: 1 }),
+      expect.objectContaining({ id: activeCompetition.body.id, count: 4 }),
     ]);
     expect(filters.body.statuses).toEqual(
       expect.arrayContaining([
@@ -251,6 +268,21 @@ describe('Partidos y mercados (spec 3)', () => {
       ]),
     );
     expect(filters.body.statuses).toHaveLength(2);
+
+    const dateRange = new URLSearchParams({
+      from: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      status: PublicMatchStatus.SCHEDULED,
+    });
+    const dateFiltered = await request(app.getHttpServer())
+      .get(`/matches?${dateRange}`)
+      .expect(200);
+    expect(dateFiltered.body.items.map((match: { id: string }) => match.id)).toContain(
+      soonScheduledId,
+    );
+    expect(dateFiltered.body.items.map((match: { id: string }) => match.id)).not.toContain(
+      pastScheduledId,
+    );
   });
 
   async function createResultMarket(matchId: string): Promise<string> {

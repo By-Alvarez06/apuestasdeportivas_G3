@@ -110,8 +110,7 @@ const oddsSourceToPublic: Record<OddsSource, PublicOddsSource> = {
 
 const isLiveEligible = (status: MatchStatus) =>
   status === MatchStatus.SCHEDULED || status === MatchStatus.LIVE;
-const PUBLIC_LIVE_LIMIT = 2;
-const PUBLIC_UPCOMING_LIMIT = 10;
+const PUBLIC_MATCH_PAGE_SIZE = 20;
 
 const conflict = (message: string) =>
   new DomainError(ErrorCode.CONFLICT, message, HttpStatus.CONFLICT);
@@ -135,6 +134,7 @@ export class MatchesService {
       const baseWhere = this.publicWhere(baseFilters);
       const includeLive = filters.status !== PublicMatchStatus.SCHEDULED;
       const includeUpcoming = filters.status !== PublicMatchStatus.LIVE;
+      const pageSize = Math.min(filters.pageSize, PUBLIC_MATCH_PAGE_SIZE);
       const withOpenOdds: Prisma.MatchWhereInput = {
         markets: {
           some: {
@@ -145,7 +145,6 @@ export class MatchesService {
       };
       const liveWhere: Prisma.MatchWhereInput = {
         ...baseWhere,
-        ...withOpenOdds,
         status: MatchStatus.LIVE,
       };
       const upcomingWhere: Prisma.MatchWhereInput = {
@@ -153,38 +152,38 @@ export class MatchesService {
         ...withOpenOdds,
         status: MatchStatus.SCHEDULED,
       };
-      const [liveCount, upcomingCount, liveRows, upcomingRows] = await Promise.all([
+      const [liveFixtureCount, upcomingCount] = await Promise.all([
         includeLive ? this.prisma.match.count({ where: liveWhere }) : 0,
         includeUpcoming ? this.prisma.match.count({ where: upcomingWhere }) : 0,
-        includeLive
+      ]);
+      const liveCount = Math.min(liveFixtureCount, 2);
+      const offset = (filters.page - 1) * pageSize;
+      const liveTake = includeLive ? Math.min(Math.max(liveCount - offset, 0), pageSize) : 0;
+      const upcomingSkip = includeLive ? Math.max(offset - liveCount, 0) : offset;
+      const [liveRows, upcomingRows] = await Promise.all([
+        liveTake > 0
           ? this.prisma.match.findMany({
               where: liveWhere,
               include: PUBLIC_MATCH_INCLUDE,
               orderBy: [{ kickoffAt: 'desc' }, { id: 'asc' }],
-              take: PUBLIC_LIVE_LIMIT,
+              skip: Math.min(offset, liveCount),
+              take: liveTake,
             })
           : [],
-        includeUpcoming
+        includeUpcoming && pageSize > liveTake
           ? this.prisma.match.findMany({
               where: upcomingWhere,
               include: PUBLIC_MATCH_INCLUDE,
               orderBy: [{ kickoffAt: 'asc' }, { id: 'asc' }],
-              take: PUBLIC_UPCOMING_LIMIT,
+              skip: upcomingSkip,
+              take: pageSize - liveTake,
             })
           : [],
       ]);
-      const pageSize =
-        includeLive && includeUpcoming
-          ? PUBLIC_LIVE_LIMIT + PUBLIC_UPCOMING_LIMIT
-          : includeLive
-            ? PUBLIC_LIVE_LIMIT
-            : PUBLIC_UPCOMING_LIMIT;
-      const rows = filters.page === 1 ? [...liveRows, ...upcomingRows] : [];
+      const rows = [...liveRows, ...upcomingRows];
       return {
         items: rows.map((match) => this.serializeMatch(match, false)),
-        total:
-          Math.min(liveCount, includeLive ? PUBLIC_LIVE_LIMIT : 0) +
-          Math.min(upcomingCount, includeUpcoming ? PUBLIC_UPCOMING_LIMIT : 0),
+        total: liveCount + upcomingCount,
         page: filters.page,
         pageSize,
       };
@@ -270,9 +269,29 @@ export class MatchesService {
 
   async listPublicFilters(filters: MatchFiltersDto) {
     this.validateDateRange(filters);
-    const competitionsWhere = this.publicWhere(filters, 'competition');
-    const statusesWhere = this.publicWhere(filters, 'status');
-    const [competitions, groupedStatuses] = await Promise.all([
+    const withOpenOdds: Prisma.MatchWhereInput = {
+      markets: {
+        some: {
+          status: MarketStatus.OPEN,
+          selections: { some: { isActive: true } },
+        },
+      },
+    };
+    const competitionBase = this.publicWhere(filters, 'competition');
+    const competitionConditions: Prisma.MatchWhereInput[] = [];
+    if (!filters.status || filters.status === PublicMatchStatus.LIVE) {
+      competitionConditions.push({ ...competitionBase, status: MatchStatus.LIVE });
+    }
+    if (!filters.status || filters.status === PublicMatchStatus.SCHEDULED) {
+      competitionConditions.push({
+        ...competitionBase,
+        ...withOpenOdds,
+        status: MatchStatus.SCHEDULED,
+      });
+    }
+    const competitionsWhere: Prisma.MatchWhereInput = { OR: competitionConditions };
+    const statusBase = this.publicWhere(filters, 'status');
+    const [competitions, liveCount, scheduledCount] = await Promise.all([
       this.prisma.competition.findMany({
         where: { matches: { some: competitionsWhere } },
         select: {
@@ -283,11 +302,14 @@ export class MatchesService {
         },
         orderBy: [{ name: 'asc' }, { country: 'asc' }],
       }),
-      this.prisma.match.groupBy({
-        by: ['status'],
-        where: statusesWhere,
-        _count: { _all: true },
-      }),
+      !filters.status || filters.status === PublicMatchStatus.LIVE
+        ? this.prisma.match.count({ where: { ...statusBase, status: MatchStatus.LIVE } })
+        : 0,
+      !filters.status || filters.status === PublicMatchStatus.SCHEDULED
+        ? this.prisma.match.count({
+            where: { ...statusBase, ...withOpenOdds, status: MatchStatus.SCHEDULED },
+          })
+        : 0,
     ]);
 
     return {
@@ -295,13 +317,14 @@ export class MatchesService {
         ...competition,
         count: _count.matches,
       })),
-      statuses: groupedStatuses
-        .filter(({ status }) => status === MatchStatus.SCHEDULED || status === MatchStatus.LIVE)
-        .map(({ status, _count }) => ({
-          value: matchStatusToPublic[status],
-          label: status === MatchStatus.LIVE ? 'En vivo' : 'Programado',
-          count: _count._all,
-        })),
+      statuses: [
+        ...(liveCount > 0
+          ? [{ value: PublicMatchStatus.LIVE, label: 'En vivo', count: Math.min(liveCount, 2) }]
+          : []),
+        ...(scheduledCount > 0
+          ? [{ value: PublicMatchStatus.SCHEDULED, label: 'Programado', count: scheduledCount }]
+          : []),
+      ],
     };
   }
 
@@ -895,9 +918,6 @@ export class MatchesService {
         },
       },
     };
-    const includeLiveWithoutOdds =
-      ignored === 'status' || !filters.status || filters.status === PublicMatchStatus.LIVE;
-
     return {
       status:
         ignored === 'status' || !filters.status
@@ -906,22 +926,18 @@ export class MatchesService {
       competitionId: ignored === 'competition' ? undefined : filters.competitionId,
       kickoffAt: this.kickoffFilter(filters),
       AND: [
-        includeLiveWithoutOdds
+        ignored === 'status' || !filters.status || filters.status === PublicMatchStatus.LIVE
           ? { OR: [{ status: { in: [MatchStatus.LIVE, MatchStatus.SCHEDULED] } }, activeMarket] }
           : activeMarket,
-        ...(filters.from === undefined && filters.to === undefined
-          ? [
-              {
-                OR: [
-                  { kickoffAt: { gte: new Date() } },
-                  {
-                    status: MatchStatus.LIVE,
-                    kickoffAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
-                  },
-                ],
-              },
-            ]
-          : []),
+        {
+          OR: [
+            { status: MatchStatus.SCHEDULED, kickoffAt: { gte: new Date() } },
+            {
+              status: MatchStatus.LIVE,
+              kickoffAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
+            },
+          ],
+        },
       ],
     };
   }
