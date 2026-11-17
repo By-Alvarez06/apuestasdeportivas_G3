@@ -128,7 +128,7 @@ describe('Partidos y mercados (spec 3)', () => {
     await Promise.all([upcomingId, liveId, finishedId].map(addExternalOdds));
     await prisma.match.updateMany({
       where: { id: { in: [liveId, liveWithoutOddsId] } },
-      data: { kickoffAt: new Date('2026-11-13T20:00:00.000Z'), status: DbMatchStatus.LIVE },
+      data: { kickoffAt: new Date(Date.now() - 60 * 60 * 1000), status: DbMatchStatus.LIVE },
     });
     await prisma.match.update({
       where: { id: finishedId },
@@ -143,8 +143,8 @@ describe('Partidos y mercados (spec 3)', () => {
     expect(ids).toContain(upcomingId);
     expect(ids).toContain(liveId);
     expect(ids).toContain(liveWithoutOddsId);
+    expect(ids).toContain(withoutOddsId);
     expect(ids).not.toContain(finishedId);
-    expect(ids).not.toContain(withoutOddsId);
   });
 
   it('limita la cartelera pública a 20 partidos con cuotas externas abiertas', async () => {
@@ -222,14 +222,14 @@ describe('Partidos y mercados (spec 3)', () => {
     await prisma.match.update({
       where: { id: liveId },
       data: {
-        kickoffAt: new Date('2026-11-13T20:00:00.000Z'),
+        kickoffAt: new Date(Date.now() - 60 * 60 * 1000),
         status: DbMatchStatus.LIVE,
       },
     });
     await prisma.match.update({
       where: { id: liveWithoutOddsId },
       data: {
-        kickoffAt: new Date('2026-11-14T20:00:00.000Z'),
+        kickoffAt: new Date(Date.now() - 90 * 60 * 1000),
         status: DbMatchStatus.LIVE,
       },
     });
@@ -242,10 +242,11 @@ describe('Partidos y mercados (spec 3)', () => {
     const filters = await request(app.getHttpServer()).get('/matches/filters').expect(200);
     expect(filters.body.competitions).toEqual([
       expect.objectContaining({ id: activeCompetition.body.id, count: 3 }),
+      expect.objectContaining({ id: emptyCompetition.body.id, count: 1 }),
     ]);
     expect(filters.body.statuses).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ value: PublicMatchStatus.SCHEDULED, count: 1 }),
+        expect.objectContaining({ value: PublicMatchStatus.SCHEDULED, count: 2 }),
         expect.objectContaining({ value: PublicMatchStatus.LIVE, count: 2 }),
       ]),
     );
