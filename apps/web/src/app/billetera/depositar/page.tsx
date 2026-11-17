@@ -102,7 +102,9 @@ function Deposit() {
           </span>
         </div>
         <button className="button" type="submit" disabled={busy || !normalized}>
-          {busy ? 'Procesando simulación…' : `Simular depósito ${normalized ? usd(normalized) : ''}`}
+          {busy
+            ? 'Procesando simulación…'
+            : `Simular depósito ${normalized ? usd(normalized) : ''}`}
         </button>
       </form>
       <p>
