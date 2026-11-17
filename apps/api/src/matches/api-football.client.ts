@@ -180,6 +180,19 @@ export class ApiFootballClient {
     return payload.map(parseFixture);
   }
 
+  async liveFixtures(): Promise<FootballFixture[]> {
+    const payload = await this.request('/fixtures', { live: 'all', timezone: 'UTC' });
+    return payload.map(parseFixture);
+  }
+
+  async nextFixtures(limit = 20): Promise<FootballFixture[]> {
+    const payload = await this.request('/fixtures', {
+      next: String(limit),
+      timezone: 'UTC',
+    });
+    return payload.map(parseFixture);
+  }
+
   async oddsForDate(
     date: string,
     bookmakerId: number,

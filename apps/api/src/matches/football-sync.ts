@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Job, Queue, Worker } from 'bullmq';
@@ -147,7 +148,9 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       'sync-fixtures',
       {},
       {
-        jobId: `startup-sync-${utcDay}`,
+        // Si se rotó la clave, permitir una sincronización inicial aunque la tarea del día
+        // con la clave anterior siga guardada en Redis. Solo guardamos una huella corta, nunca la clave.
+        jobId: `startup-sync-${utcDay}-${createHash('sha256').update(apiKey).digest('hex').slice(0, 12)}`,
         removeOnComplete: 100,
         removeOnFail: 100,
       },
@@ -166,9 +169,14 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
 
   async status() {
     const budget = await this.budget.status();
+    const now = Date.now();
     const [liveMatches, scheduledMatches] = await Promise.all([
-      this.prisma.match.count({ where: { status: MatchStatus.LIVE } }),
-      this.prisma.match.count({ where: { status: MatchStatus.SCHEDULED } }),
+      this.prisma.match.count({
+        where: { status: MatchStatus.LIVE, kickoffAt: { gte: new Date(now - 6 * 60 * 60 * 1000) } },
+      }),
+      this.prisma.match.count({
+        where: { status: MatchStatus.SCHEDULED, kickoffAt: { gte: new Date(now) } },
+      }),
     ]);
     const bookmakerId = this.readBookmakerId();
     return {
@@ -189,8 +197,13 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async syncDate(date: string, now = new Date()): Promise<SyncResult> {
-    const fixtures = await this.client.fixturesForDate(date);
+  async syncDate(
+    date: string,
+    now = new Date(),
+    fixturesOverride?: FootballFixture[],
+    syncOdds = true,
+  ): Promise<SyncResult> {
+    const fixtures = fixturesOverride ?? (await this.client.fixturesForDate(date));
     let imported = 0;
     let unchanged = 0;
     let manualOverrides = 0;
@@ -335,7 +348,7 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       if (bookmakerId && isLiveEligible(status)) oddsMatches.set(fixture.fixtureId, match.saved.id);
     }
 
-    if (bookmakerId && this.oddsSyncReason === null) {
+    if (syncOdds && bookmakerId && this.oddsSyncReason === null) {
       try {
         const odds = await this.client.oddsForDate(date, bookmakerId);
         for (const entry of odds) {
@@ -391,16 +404,46 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
     }
     const day = new Date().toISOString().slice(0, 10);
     try {
-      const result = await this.syncDate(day);
+      const initial: SyncResult = {
+        imported: 0,
+        unchanged: 0,
+        manualOverrides: 0,
+        unknownStatuses: 0,
+        liveMatches: 0,
+        oddsUpdated: 0,
+        oddsError: null,
+        skipped: false,
+      };
+      const result: SyncResult = { ...initial };
+      const add = (partial: SyncResult) => {
+        result.imported += partial.imported;
+        result.unchanged += partial.unchanged;
+        result.manualOverrides += partial.manualOverrides;
+        result.unknownStatuses += partial.unknownStatuses;
+        result.liveMatches += partial.liveMatches;
+        result.oddsUpdated += partial.oddsUpdated;
+        result.oddsError = result.oddsError ?? partial.oddsError;
+      };
+      add(await this.syncDate(day));
+      // API-Football permite consultar en vivo y próximos directamente. Así no dependemos
+      // de que el proveedor incluya todos los encuentros en la consulta por fecha UTC.
+      for (const fixtures of [
+        await this.client.liveFixtures(),
+        await this.client.nextFixtures(20),
+      ]) {
+        if (fixtures.length === 0) continue;
+        add(await this.syncDate(day, new Date(), fixtures, false));
+      }
+      this.lastSync = { at: new Date().toISOString(), result, error: null };
       const current = await this.budget.status();
       const interval = this.adaptiveInterval(
         result.liveMatches,
-        Math.floor(current.remaining / (this.readBookmakerId() ? 2 : 1)),
+        Math.floor(current.remaining / (3 + (this.readBookmakerId() ? 1 : 0))),
         current.resetsAt,
       );
       await this.schedule(interval);
       this.logger.log(
-        `Sincronización ${day}: ${result.imported} cambios, ${result.unchanged} sin cambios, ${result.manualOverrides} protegidos, ${result.liveMatches} en vivo, ${current.remaining}/${current.limit} peticiones disponibles.`,
+        `Sincronización ${day}, en vivo y próximos: ${result.imported} cambios, ${result.unchanged} sin cambios, ${result.manualOverrides} protegidos, ${result.liveMatches} en vivo, ${current.remaining}/${current.limit} peticiones disponibles.`,
       );
       return result;
     } catch (error) {
