@@ -19,12 +19,12 @@ interface DepositView {
 const MESSAGE: Record<DepositStatus, { tone: 'info' | 'warning' | 'error'; text: string }> = {
   [DepositStatus.PENDING]: {
     tone: 'warning',
-    text: 'Estamos confirmando el pago con Payphone. Esta página se actualiza sola.',
+    text: 'Estamos confirmando el pago. Esta página se actualiza sola.',
   },
   [DepositStatus.CREDITED]: { tone: 'info', text: 'Depósito acreditado. Ya está en tu saldo.' },
   [DepositStatus.FAILED]: {
     tone: 'error',
-    text: 'Payphone no aprobó el pago o lo cancelaste. No se cobró nada; puedes intentarlo de nuevo.',
+    text: 'El pago no se aprobó o fue cancelado. No se cobró nada; puedes intentarlo de nuevo.',
   },
   [DepositStatus.EXPIRED]: {
     tone: 'error',

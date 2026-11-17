@@ -65,8 +65,8 @@ function Deposit() {
     <div className={styles.page}>
       <h1>Depositar</h1>
       <p className="muted">
-        Pagas en Payphone (entorno de pruebas). El saldo sube cuando Payphone nos confirma el pago,
-        no antes.
+        Pago simulado para desarrollo: no se realiza ningún cobro real. El saldo se acredita al
+        confirmar la simulación.
       </p>
       <form className="form" onSubmit={onSubmit}>
         {error && <Notice tone="error">{error}</Notice>}
@@ -102,7 +102,9 @@ function Deposit() {
           </span>
         </div>
         <button className="button" type="submit" disabled={busy || !normalized}>
-          {busy ? 'Abriendo Payphone…' : `Depositar ${normalized ? usd(normalized) : ''}`}
+          {busy
+            ? 'Procesando simulación…'
+            : `Simular depósito ${normalized ? usd(normalized) : ''}`}
         </button>
       </form>
       <p>

@@ -29,8 +29,8 @@ import {
 
 const QUEUE_NAME = 'api-football-fixtures';
 const SCHEDULER_ID = 'daily-fixture-sync';
-const DEFAULT_SCHEDULED_INTERVAL_MS = 30 * 60 * 1000;
-const DEFAULT_LIVE_INTERVAL_MS = 60 * 1000;
+const DEFAULT_SCHEDULED_INTERVAL_MS = 5 * 60 * 1000;
+const DEFAULT_LIVE_INTERVAL_MS = 5 * 60 * 1000;
 const MIN_SCHEDULED_INTERVAL_MS = 5 * 60 * 1000;
 const MIN_LIVE_INTERVAL_MS = 30 * 1000;
 const isLiveEligible = (status: MatchStatus) =>
@@ -88,6 +88,8 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
   private queue: Queue | null = null;
   private worker: Worker | null = null;
   private lastSync: { at: string; result: SyncResult | null; error: string | null } | null = null;
+  private nextSyncAt: string | null = null;
+  private effectiveIntervalMs: number | null = null;
   private disabledReason: string | null = null;
   private oddsSyncReason: string | null = null;
 
@@ -135,6 +137,21 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
 
     this.connection = connection;
     this.queue = new Queue(QUEUE_NAME, { connection });
+    // Limpia el scheduler repetible legado. Cambiar su intervalo en cada ejecución dejaba jobs
+    // repetidos en Redis y podía consumir toda la cuota en pocos minutos.
+    await this.queue.removeJobScheduler(SCHEDULER_ID);
+    const pending = await this.queue.getJobs(['wait', 'waiting', 'delayed', 'prioritized']);
+    await Promise.all(
+      pending
+        .filter(
+          (job) =>
+            job.name === 'sync-fixtures' &&
+            (job.id?.startsWith(`repeat:${SCHEDULER_ID}:`) ||
+              job.id?.startsWith('sync-') ||
+              job.id?.startsWith('startup-sync-')),
+        )
+        .map((job) => job.remove()),
+    );
     this.worker = new Worker(QUEUE_NAME, (job) => this.processJob(job), {
       connection,
       concurrency: 1,
@@ -150,12 +167,13 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       {
         // Si se rotó la clave, permitir una sincronización inicial aunque la tarea del día
         // con la clave anterior siga guardada en Redis. Solo guardamos una huella corta, nunca la clave.
-        jobId: `startup-sync-${utcDay}-${createHash('sha256').update(apiKey).digest('hex').slice(0, 12)}`,
+        jobId: `startup-sync-${utcDay}-${createHash('sha256').update(apiKey).digest('hex').slice(0, 12)}-${Date.now()}`,
         removeOnComplete: 100,
         removeOnFail: 100,
       },
     );
-    await this.schedule(this.scheduledIntervalMs);
+    this.nextSyncAt = new Date().toISOString();
+    this.effectiveIntervalMs = 0;
     this.logger.log(
       'Sincronizador de API-Football habilitado; el presupuesto se reserva antes de cada petición.',
     );
@@ -187,6 +205,8 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       scheduledMatches,
       liveIntervalMs: this.liveIntervalMs,
       scheduledIntervalMs: this.scheduledIntervalMs,
+      effectiveIntervalMs: this.effectiveIntervalMs,
+      nextSyncAt: this.nextSyncAt,
       oddsSyncEnabled: bookmakerId !== null && this.oddsSyncReason === null,
       oddsSyncReason:
         this.oddsSyncReason ??
@@ -424,21 +444,31 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
         result.oddsUpdated += partial.oddsUpdated;
         result.oddsError = result.oddsError ?? partial.oddsError;
       };
+      // Una consulta del día trae horarios y marcadores, incluidos los partidos en vivo.
+      // La segunda trae solo los 10 siguientes; las cuotas añaden una consulta si están habilitadas.
       add(await this.syncDate(day));
-      // API-Football permite consultar en vivo y próximos directamente. Así no dependemos
-      // de que el proveedor incluya todos los encuentros en la consulta por fecha UTC.
-      for (const fixtures of [
-        await this.client.liveFixtures(),
-        await this.client.nextFixtures(20),
-      ]) {
-        if (fixtures.length === 0) continue;
-        add(await this.syncDate(day, new Date(), fixtures, false));
+      const upcoming = await this.client.nextFixtures(10);
+      if (upcoming.length > 0) {
+        // API-Football delivers odds by date. Group the ten upcoming fixtures by UTC day
+        // so their real odds are synced along with the fixtures shown on the betting board.
+        const upcomingByDay = new Map<string, FootballFixture[]>();
+        for (const fixture of upcoming) {
+          const fixtureDay = fixture.kickoffAt.toISOString().slice(0, 10);
+          const dayFixtures = upcomingByDay.get(fixtureDay) ?? [];
+          dayFixtures.push(fixture);
+          upcomingByDay.set(fixtureDay, dayFixtures);
+        }
+        for (const [fixtureDay, dayFixtures] of upcomingByDay) {
+          add(await this.syncDate(fixtureDay, new Date(), dayFixtures));
+        }
       }
       this.lastSync = { at: new Date().toISOString(), result, error: null };
       const current = await this.budget.status();
       const interval = this.adaptiveInterval(
         result.liveMatches,
-        Math.floor(current.remaining / (3 + (this.readBookmakerId() ? 1 : 0))),
+        // Worst case: today's fixtures, next fixtures, today's odds and odds for
+        // up to ten distinct upcoming dates.
+        Math.floor(current.remaining / (this.readBookmakerId() ? 12 : 2)),
         current.resetsAt,
       );
       await this.schedule(interval);
@@ -450,6 +480,17 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
       if (error instanceof DailyBudgetExceededError) {
         await this.schedule(Math.max(1000, error.resetsAt.getTime() - Date.now()));
       } else {
+        const current = await this.budget.status();
+        const liveMatches = await this.prisma.match.count({
+          where: { status: MatchStatus.LIVE },
+        });
+        await this.schedule(
+          this.adaptiveInterval(
+            liveMatches,
+            Math.floor(current.remaining / (this.readBookmakerId() ? 12 : 2)),
+            current.resetsAt,
+          ),
+        );
         this.lastSync = {
           at: new Date().toISOString(),
           result: null,
@@ -564,15 +605,19 @@ export class FootballSyncService implements OnModuleInit, OnModuleDestroy {
 
   private async schedule(every: number): Promise<void> {
     if (!this.queue) return;
-    await this.queue.upsertJobScheduler(
-      SCHEDULER_ID,
-      { every },
+    const delay = Math.max(1000, every);
+    await this.queue.add(
+      'sync-fixtures',
+      {},
       {
-        name: 'sync-fixtures',
-        data: {},
-        opts: { removeOnComplete: 100, removeOnFail: 100 },
+        jobId: `sync-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        delay,
+        removeOnComplete: true,
+        removeOnFail: true,
       },
     );
+    this.effectiveIntervalMs = delay;
+    this.nextSyncAt = new Date(Date.now() + delay).toISOString();
   }
 
   private readInterval(key: string, fallback: number, minimum: number): number {

@@ -92,8 +92,8 @@ function Withdraw() {
       <div className={styles.page}>
         <h1>Retirar</h1>
         <p className="muted">
-          Solo puedes retirar saldo real, a la misma persona y teléfono con los que depositaste en
-          Payphone. Los retiros de más de $200.00 los revisa un administrador.
+          Solo puedes retirar saldo real, a la misma persona y teléfono registrados al depositar.
+          Los retiros de más de $200.00 los revisa un administrador.
         </p>
         <form className="form" onSubmit={onSubmit}>
           {error && <Notice tone="error">{error}</Notice>}
@@ -122,7 +122,7 @@ function Withdraw() {
               required
             />
             <span id="phone-hint" className="hint">
-              Con código de país, como lo registró Payphone.
+              Con código de país, como lo registraste al depositar.
             </span>
           </div>
           <div className="field">

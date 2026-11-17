@@ -119,7 +119,7 @@ describe('Partidos y mercados (spec 3)', () => {
       );
   });
 
-  it('muestra próximos y en vivo aunque no tengan cuotas, no partidos históricos finalizados', async () => {
+  it('publica próximos y en vivo solo cuando tienen cuotas abiertas', async () => {
     const upcomingId = await createMatch();
     const liveId = await createMatch();
     const liveWithoutOddsId = await createMatch();
@@ -142,12 +142,12 @@ describe('Partidos y mercados (spec 3)', () => {
     const ids = response.body.items.map((match: { id: string }) => match.id);
     expect(ids).toContain(upcomingId);
     expect(ids).toContain(liveId);
-    expect(ids).toContain(liveWithoutOddsId);
-    expect(ids).toContain(withoutOddsId);
+    expect(ids).not.toContain(liveWithoutOddsId);
+    expect(ids).not.toContain(withoutOddsId);
     expect(ids).not.toContain(finishedId);
   });
 
-  it('limita la cartelera pública a 20 partidos con cuotas externas abiertas', async () => {
+  it('limita la cartelera a 10 próximos y 2 en vivo con cuotas abiertas', async () => {
     const matchIds: string[] = [];
     for (let index = 0; index < 21; index += 1) {
       const matchId = await createMatch();
@@ -174,8 +174,8 @@ describe('Partidos y mercados (spec 3)', () => {
 
     const response = await request(app.getHttpServer()).get('/matches?pageSize=100').expect(200);
 
-    expect(response.body).toMatchObject({ total: 21, pageSize: 20 });
-    expect(response.body.items).toHaveLength(20);
+    expect(response.body).toMatchObject({ total: 10, pageSize: 12 });
+    expect(response.body.items).toHaveLength(10);
     expect(
       response.body.items.every(
         (match: {

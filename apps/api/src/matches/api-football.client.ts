@@ -23,8 +23,12 @@ export interface FootballOdd {
 }
 
 export class ApiFootballPermissionError extends Error {
-  constructor(status: number) {
-    super(`API-Football denegó el acceso a las cuotas (HTTP ${status}).`);
+  constructor(status: number, suspended = false) {
+    super(
+      suspended
+        ? 'La cuenta de API-Football está suspendida; revisa su panel de control.'
+        : `API-Football denegó la petición (HTTP ${status}).`,
+    );
     this.name = ApiFootballPermissionError.name;
   }
 }
@@ -185,7 +189,7 @@ export class ApiFootballClient {
     return payload.map(parseFixture);
   }
 
-  async nextFixtures(limit = 20): Promise<FootballFixture[]> {
+  async nextFixtures(limit = 10): Promise<FootballFixture[]> {
     const payload = await this.request('/fixtures', {
       next: String(limit),
       timezone: 'UTC',
@@ -267,10 +271,21 @@ export class ApiFootballClient {
       );
     }
     if (response.status === 401 || response.status === 403) {
+      let suspended = false;
+      try {
+        const body: unknown = await response.json();
+        if (isRecord(body) && isRecord(body.errors)) {
+          suspended = Object.values(body.errors).some(
+            (message) => typeof message === 'string' && /suspend/i.test(message),
+          );
+        }
+      } catch {
+        // Conserva el error HTTP genérico si el proveedor no devuelve JSON.
+      }
       this.logger.warn(
         `API-Football denegó la petición a ${path} (HTTP ${response.status}); cuenta en el presupuesto.`,
       );
-      throw new ApiFootballPermissionError(response.status);
+      throw new ApiFootballPermissionError(response.status, suspended);
     }
     if (!response.ok) {
       this.logger.warn(
