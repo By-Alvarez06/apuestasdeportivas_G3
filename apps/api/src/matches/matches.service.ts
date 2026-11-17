@@ -110,6 +110,8 @@ const oddsSourceToPublic: Record<OddsSource, PublicOddsSource> = {
 
 const isLiveEligible = (status: MatchStatus) =>
   status === MatchStatus.SCHEDULED || status === MatchStatus.LIVE;
+const PUBLIC_LIVE_LIMIT = 2;
+const PUBLIC_UPCOMING_LIMIT = 10;
 
 const conflict = (message: string) =>
   new DomainError(ErrorCode.CONFLICT, message, HttpStatus.CONFLICT);
@@ -124,6 +126,69 @@ export class MatchesService {
 
   async listPublic(filters: MatchFiltersDto) {
     this.validateDateRange(filters);
+    if (
+      !filters.status ||
+      filters.status === PublicMatchStatus.LIVE ||
+      filters.status === PublicMatchStatus.SCHEDULED
+    ) {
+      const baseFilters = { ...filters, status: undefined };
+      const baseWhere = this.publicWhere(baseFilters);
+      const includeLive = filters.status !== PublicMatchStatus.SCHEDULED;
+      const includeUpcoming = filters.status !== PublicMatchStatus.LIVE;
+      const withOpenOdds: Prisma.MatchWhereInput = {
+        markets: {
+          some: {
+            status: MarketStatus.OPEN,
+            selections: { some: { isActive: true } },
+          },
+        },
+      };
+      const liveWhere: Prisma.MatchWhereInput = {
+        ...baseWhere,
+        ...withOpenOdds,
+        status: MatchStatus.LIVE,
+      };
+      const upcomingWhere: Prisma.MatchWhereInput = {
+        ...baseWhere,
+        ...withOpenOdds,
+        status: MatchStatus.SCHEDULED,
+      };
+      const [liveCount, upcomingCount, liveRows, upcomingRows] = await Promise.all([
+        includeLive ? this.prisma.match.count({ where: liveWhere }) : 0,
+        includeUpcoming ? this.prisma.match.count({ where: upcomingWhere }) : 0,
+        includeLive
+          ? this.prisma.match.findMany({
+              where: liveWhere,
+              include: PUBLIC_MATCH_INCLUDE,
+              orderBy: [{ kickoffAt: 'desc' }, { id: 'asc' }],
+              take: PUBLIC_LIVE_LIMIT,
+            })
+          : [],
+        includeUpcoming
+          ? this.prisma.match.findMany({
+              where: upcomingWhere,
+              include: PUBLIC_MATCH_INCLUDE,
+              orderBy: [{ kickoffAt: 'asc' }, { id: 'asc' }],
+              take: PUBLIC_UPCOMING_LIMIT,
+            })
+          : [],
+      ]);
+      const pageSize =
+        includeLive && includeUpcoming
+          ? PUBLIC_LIVE_LIMIT + PUBLIC_UPCOMING_LIMIT
+          : includeLive
+            ? PUBLIC_LIVE_LIMIT
+            : PUBLIC_UPCOMING_LIMIT;
+      const rows = filters.page === 1 ? [...liveRows, ...upcomingRows] : [];
+      return {
+        items: rows.map((match) => this.serializeMatch(match, false)),
+        total:
+          Math.min(liveCount, includeLive ? PUBLIC_LIVE_LIMIT : 0) +
+          Math.min(upcomingCount, includeUpcoming ? PUBLIC_UPCOMING_LIMIT : 0),
+        page: filters.page,
+        pageSize,
+      };
+    }
     const where = this.publicWhere(filters);
     const pageSize = Math.min(filters.pageSize, 20);
     const total = await this.prisma.match.count({ where });
