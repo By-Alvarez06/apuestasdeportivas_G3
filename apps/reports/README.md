@@ -9,8 +9,14 @@ y después llama a este servicio con `REPORTS_SERVICE_TOKEN`.
 Durante el desarrollo el servicio carga las variables del `.env` situado en la raíz del monorepo;
 en despliegues se leen las variables definidas por el entorno.
 
-1. Define `REPORTS_SERVICE_TOKEN` con un secreto aleatorio largo, igual en el servicio de API y en
-   este servicio.
+El dashboard y las exportaciones dependen de este servicio. Para levantar la aplicación completa,
+inicia PostgreSQL y Redis y luego ejecuta `corepack pnpm dev` desde la raíz; Turbo inicia también
+este servicio. Si levantas la web y la API por separado, deja además un proceso activo para
+informes con `corepack pnpm --filter @apuestas/reports dev`. Si el proceso no está activo, la API
+mostrará `El servicio de informes no está disponible.`
+
+1. Define `REPORTS_SERVICE_TOKEN` con el mismo secreto en la API y en este servicio. La plantilla
+   local ya contiene un valor de desarrollo; usa un secreto propio fuera del entorno local.
 2. Configura `REPORTS_DATABASE_URL` con una cuenta PostgreSQL que solo tenga permiso `SELECT` sobre
    las tablas de dominio. El pool fija `default_transaction_read_only=on` y cada consulta ejecuta
    además una transacción de solo lectura.
@@ -19,7 +25,7 @@ en despliegues se leen las variables definidas por el entorno.
 
    ```powershell
    uv sync --project apps/reports --extra dev
-   corepack pnpm --filter @apuestas/reports dev
+   corepack pnpm dev
    ```
 
 Las rutas `GET /dashboard` y `GET /export` aceptan `from` y `to` como fechas ISO-8601 con zona
