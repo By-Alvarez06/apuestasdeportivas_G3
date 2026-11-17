@@ -613,12 +613,13 @@ function FixtureCard({
   onSelectMatch: (matchId: string) => void;
 }) {
   const selected = selectedMatchId === match.id;
+  const liveWithoutOdds = match.status === MatchStatus.LIVE && match.markets.length === 0;
   return (
     <Link
       className={`${styles.fixture} ${selected ? styles.fixtureSelected : ''}`}
       href={`/apuestas?matchId=${encodeURIComponent(match.id)}`}
       aria-current={selected ? 'page' : undefined}
-      aria-label={`Ver cuotas y apostar en ${match.homeTeam.name} contra ${match.awayTeam.name}`}
+      aria-label={`${liveWithoutOdds ? 'Ver marcador de' : 'Ver cuotas y apostar en'} ${match.homeTeam.name} contra ${match.awayTeam.name}`}
       onClick={() => onSelectMatch(match.id)}
     >
       <p className={styles.fixtureMeta}>
@@ -637,7 +638,11 @@ function FixtureCard({
         {FIXTURE_STATUS_LABELS[match.status]}
       </span>
       <span className={styles.fixtureAction}>
-        {selected ? 'Partido seleccionado' : 'Ver cuotas y apostar'}
+        {selected
+          ? 'Partido seleccionado'
+          : liveWithoutOdds
+            ? 'Ver marcador en vivo'
+            : 'Ver cuotas y apostar'}
       </span>
     </Link>
   );
