@@ -842,10 +842,20 @@ export class MatchesService {
       kickoffAt: this.kickoffFilter(filters),
       AND: [
         includeLiveWithoutOdds
-          ? { OR: [{ status: MatchStatus.LIVE }, activeMarket] }
+          ? { OR: [{ status: { in: [MatchStatus.LIVE, MatchStatus.SCHEDULED] } }, activeMarket] }
           : activeMarket,
         ...(filters.from === undefined && filters.to === undefined
-          ? [{ OR: [{ kickoffAt: { gte: new Date() } }, { status: MatchStatus.LIVE }] }]
+          ? [
+              {
+                OR: [
+                  { kickoffAt: { gte: new Date() } },
+                  {
+                    status: MatchStatus.LIVE,
+                    kickoffAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) },
+                  },
+                ],
+              },
+            ]
           : []),
       ],
     };
